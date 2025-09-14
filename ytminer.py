@@ -1031,8 +1031,315 @@ class YouTubeMiner:
             return "Challenging market - consider niche sub-topics or different approach"
 
 
+def interactive_mode():
+    """Interactive mode that guides users through the analysis process"""
+    print(f"\n{Fore.CYAN}🚀 Welcome to YTMiner Interactive Mode!{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}I'll guide you through the analysis process step by step.{Style.RESET_ALL}\n")
+    
+    # Step 1: Get keyword
+    keyword = click.prompt(f"{Fore.GREEN}1. What topic would you like to analyze?", type=str)
+    
+    # Step 2: Get number of results
+    print(f"\n{Fore.GREEN}2. How many videos should I analyze?{Style.RESET_ALL}")
+    print("   • 10-20: Quick analysis")
+    print("   • 25-35: Detailed analysis") 
+    print("   • 40-50: Comprehensive analysis")
+    max_results = click.prompt("Number of videos", type=int, default=25)
+    max_results = min(max_results, 50)  # Cap at 50
+    
+    # Step 3: Get user type
+    print(f"\n{Fore.GREEN}3. What best describes you?{Style.RESET_ALL}")
+    print("   1. Content Creator (YouTuber, streamer)")
+    print("   2. Digital Marketer (Marketing professional)")
+    print("   3. Researcher/Analyst (Academic or business research)")
+    print("   4. Business Owner (Looking for market insights)")
+    
+    user_type = click.prompt("Choose your role", type=click.Choice(['1', '2', '3', '4']), default='1')
+    
+    # Step 4: Get analysis preferences based on user type
+    analysis_options = get_analysis_preferences(user_type)
+    
+    # Step 5: Optional filters
+    print(f"\n{Fore.GREEN}4. Any specific filters? (Press Enter to skip){Style.RESET_ALL}")
+    
+    # Time filter
+    time_filter = click.prompt("   • Videos from last X days? (e.g., 7, 30, 90)", default="", type=str)
+    days_back = int(time_filter) if time_filter.isdigit() else None
+    
+    # Region filter
+    region = click.prompt("   • Specific country? (e.g., BR, US, UK)", default="", type=str)
+    region = region.upper() if region else None
+    
+    # Duration filter
+    print("   • Video duration?")
+    print("     1. Short (under 4 minutes)")
+    print("     2. Medium (4-20 minutes)")
+    print("     3. Long (over 20 minutes)")
+    print("     4. Any duration")
+    duration_choice = click.prompt("Choose duration", type=click.Choice(['1', '2', '3', '4']), default='4')
+    duration_map = {'1': 'short', '2': 'medium', '3': 'long', '4': 'any'}
+    duration = duration_map[duration_choice]
+    
+    # Step 6: Run analysis
+    print(f"\n{Fore.CYAN}🔍 Starting analysis...{Style.RESET_ALL}")
+    print(f"   Keyword: {keyword}")
+    print(f"   Videos: {max_results}")
+    print(f"   Analysis: {', '.join(analysis_options)}")
+    if days_back:
+        print(f"   Time filter: Last {days_back} days")
+    if region:
+        print(f"   Region: {region}")
+    print(f"   Duration: {duration}")
+    
+    # Execute the analysis
+    run_analysis(keyword, max_results, days_back, region, duration, analysis_options)
+
+
+def get_analysis_preferences(user_type):
+    """Get analysis preferences based on user type"""
+    preferences = {
+        '1': {  # Content Creator
+            'name': 'Content Creator',
+            'recommended': ['title_analysis', 'temporal_analysis', 'competitor_analysis', 'keyword_analysis'],
+            'description': 'Perfect for optimizing your content strategy!'
+        },
+        '2': {  # Digital Marketer
+            'name': 'Digital Marketer',
+            'recommended': ['competitor_analysis', 'keyword_analysis', 'executive_report'],
+            'description': 'Great for market research and campaign planning!'
+        },
+        '3': {  # Researcher/Analyst
+            'name': 'Researcher/Analyst',
+            'recommended': ['analysis', 'temporal_analysis', 'executive_report'],
+            'description': 'Ideal for comprehensive data analysis!'
+        },
+        '4': {  # Business Owner
+            'name': 'Business Owner',
+            'recommended': ['executive_report', 'competitor_analysis', 'keyword_analysis'],
+            'description': 'Perfect for strategic business insights!'
+        }
+    }
+    
+    user_pref = preferences[user_type]
+    print(f"\n{Fore.YELLOW}Great choice! {user_pref['description']}{Style.RESET_ALL}")
+    
+    # Show recommended analyses
+    print(f"\n{Fore.GREEN}Recommended analyses for {user_pref['name']}:{Style.RESET_ALL}")
+    analysis_descriptions = {
+        'analysis': '📈 Growth Pattern Analysis - Performance trends and top performers',
+        'title_analysis': '📝 Title Analysis - Winning title formulas and patterns',
+        'competitor_analysis': '🏆 Competitor Analysis - Market leaders and positioning',
+        'temporal_analysis': '⏰ Temporal Analysis - Best posting times and schedules',
+        'keyword_analysis': '🔍 Keyword Analysis - SEO opportunities and trending terms',
+        'executive_report': '📊 Executive Report - Comprehensive strategic insights'
+    }
+    
+    for analysis in user_pref['recommended']:
+        print(f"   ✓ {analysis_descriptions[analysis]}")
+    
+    # Ask if they want all recommended or custom selection
+    print(f"\n{Fore.GREEN}Would you like to:{Style.RESET_ALL}")
+    print("   1. Run all recommended analyses (recommended)")
+    print("   2. Choose specific analyses")
+    
+    choice = click.prompt("Your choice", type=click.Choice(['1', '2']), default='1')
+    
+    if choice == '1':
+        return user_pref['recommended']
+    else:
+        return custom_analysis_selection()
+
+
+def custom_analysis_selection():
+    """Allow users to select specific analyses"""
+    print(f"\n{Fore.GREEN}Select the analyses you want:{Style.RESET_ALL}")
+    print("   1. 📈 Growth Pattern Analysis")
+    print("   2. 📝 Title Pattern Analysis") 
+    print("   3. 🏆 Competitor Analysis")
+    print("   4. ⏰ Temporal Analysis")
+    print("   5. 🔍 Keyword Analysis")
+    print("   6. 📊 Executive Report")
+    
+    selections = click.prompt("Enter numbers separated by commas (e.g., 1,3,5)", type=str)
+    
+    analysis_map = {
+        '1': 'analysis',
+        '2': 'title_analysis', 
+        '3': 'competitor_analysis',
+        '4': 'temporal_analysis',
+        '5': 'keyword_analysis',
+        '6': 'executive_report'
+    }
+    
+    selected = []
+    for num in selections.split(','):
+        num = num.strip()
+        if num in analysis_map:
+            selected.append(analysis_map[num])
+    
+    return selected if selected else ['analysis']  # Default to basic analysis
+
+
+def run_analysis(keyword, max_results, days_back, region, duration, analysis_options):
+    """Run the analysis with the selected options"""
+    api_key = os.getenv('YOUTUBE_API_KEY')
+    miner = YouTubeMiner(api_key)
+    
+    # Set up search parameters
+    published_after = None
+    if days_back:
+        published_after = (datetime.now() - timedelta(days=days_back)).isoformat() + 'Z'
+    
+    # Search for videos
+    print(f"\n{Fore.CYAN}Searching for videos about '{keyword}'...{Style.RESET_ALL}")
+    
+    videos = miner.search_videos(
+        keyword=keyword,
+        max_results=max_results,
+        order='relevance',
+        published_after=published_after,
+        region_code=region,
+        video_duration=duration if duration != 'any' else None
+    )
+    
+    if not videos:
+        print(f"{Fore.RED}No videos found. Try adjusting your search criteria.{Style.RESET_ALL}")
+        return
+    
+    print(f"{Fore.GREEN}Found {len(videos)} videos!{Style.RESET_ALL}")
+    
+    # Display basic results
+    display_basic_results(videos)
+    
+    # Run selected analyses
+    for analysis in analysis_options:
+        if analysis == 'analysis':
+            run_growth_analysis(miner, videos)
+        elif analysis == 'title_analysis':
+            run_title_analysis(miner, videos)
+        elif analysis == 'competitor_analysis':
+            run_competitor_analysis(miner, videos)
+        elif analysis == 'temporal_analysis':
+            run_temporal_analysis(miner, videos)
+        elif analysis == 'keyword_analysis':
+            run_keyword_analysis(miner, videos, keyword)
+        elif analysis == 'executive_report':
+            run_executive_report(miner, videos, keyword)
+    
+    print(f"\n{Fore.GREEN}✅ Analysis complete!{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}💡 Tip: Use specific flags for faster analysis next time!{Style.RESET_ALL}")
+
+
+def display_basic_results(videos):
+    """Display basic video results"""
+    print(f"\n{Fore.CYAN}📊 Top Videos:{Style.RESET_ALL}")
+    
+    for i, video in enumerate(videos[:5], 1):
+        print(f"   {i}. {video['title'][:60]}{'...' if len(video['title']) > 60 else ''}")
+        print(f"      👀 {video['view_count']:,} views | 👍 {video['like_count']:,} likes | 📅 {video['published_at'][:10]}")
+        print(f"      🔗 {video['url']}")
+        print()
+
+
+def run_growth_analysis(miner, videos):
+    """Run growth pattern analysis"""
+    print(f"\n{Fore.CYAN}📈 Growth Pattern Analysis:{Style.RESET_ALL}")
+    growth_data = miner.analyze_growth_patterns(videos)
+    
+    print(f"   • Total videos: {len(videos)}")
+    print(f"   • Average views: {growth_data.get('avg_views', 0):,.0f}")
+    print(f"   • Average engagement: {growth_data.get('avg_engagement', 0):.1f}%")
+    
+    if growth_data.get('top_performers'):
+        print(f"\n   🏆 Top Performers:")
+        for i, performer in enumerate(growth_data['top_performers'][:3], 1):
+            print(f"      {i}. {performer['title'][:50]}...")
+            print(f"         Views: {performer['view_count']:,} | Likes: {performer['like_count']:,}")
+
+
+def run_title_analysis(miner, videos):
+    """Run title pattern analysis"""
+    print(f"\n{Fore.CYAN}📝 Title Pattern Analysis:{Style.RESET_ALL}")
+    title_data = miner.analyze_titles(videos)
+    
+    if title_data.get('common_words'):
+        print(f"   🔤 Most common words:")
+        for word, count in list(title_data['common_words'].items())[:5]:
+            print(f"      • {word} ({count} times)")
+    
+    if title_data.get('patterns'):
+        patterns = title_data['patterns']
+        print(f"\n   📊 Title Patterns:")
+        print(f"      • Tutorial content: {patterns.get('tutorial_pattern', 0):.0f}%")
+        print(f"      • Numbers in titles: {patterns.get('number_pattern', 0):.0f}%")
+        print(f"      • Questions: {patterns.get('question_pattern', 0):.0f}%")
+
+
+def run_competitor_analysis(miner, videos):
+    """Run competitor analysis"""
+    print(f"\n{Fore.CYAN}🏆 Competitor Analysis:{Style.RESET_ALL}")
+    competitor_data = miner.analyze_competitors(videos)
+    
+    print(f"   • Total channels: {competitor_data.get('total_channels', 0)}")
+    print(f"   • Market concentration: {competitor_data.get('market_concentration', {}).get('concentration_level', 'Unknown')}")
+    
+    if competitor_data.get('top_competitors'):
+        print(f"\n   🏅 Top Competitors:")
+        for i, competitor in enumerate(competitor_data['top_competitors'][:3], 1):
+            print(f"      {i}. {competitor['channel']}")
+            print(f"         Market share: {competitor['market_share']:.1f}% | Videos: {competitor['video_count']}")
+
+
+def run_temporal_analysis(miner, videos):
+    """Run temporal analysis"""
+    print(f"\n{Fore.CYAN}⏰ Temporal Analysis:{Style.RESET_ALL}")
+    temporal_data = miner.analyze_temporal_patterns(videos)
+    
+    if temporal_data.get('best_posting_times'):
+        best_time = temporal_data['best_posting_times']['best_hours'][0]['hour']
+        best_day = temporal_data['best_posting_times']['best_days'][0]['day_of_week']
+        print(f"   🎯 Best posting time: {best_day} at {int(best_time)}:00")
+    
+    print(f"   📊 Performance by day:")
+    for day_data in temporal_data.get('day_performance', [])[:3]:
+        print(f"      • {day_data['day_of_week']}: {day_data['avg_views']:,.0f} avg views")
+
+
+def run_keyword_analysis(miner, videos, keyword):
+    """Run keyword analysis"""
+    print(f"\n{Fore.CYAN}🔍 Keyword Analysis:{Style.RESET_ALL}")
+    keyword_data = miner.analyze_keywords(videos, keyword)
+    
+    if keyword_data.get('top_keywords'):
+        print(f"   🔤 Top keywords:")
+        for word, count in list(keyword_data['top_keywords'].items())[:5]:
+            print(f"      • {word} ({count} times)")
+    
+    if keyword_data.get('seo_suggestions'):
+        print(f"\n   💡 SEO Suggestions:")
+        for suggestion in keyword_data['seo_suggestions'][:3]:
+            print(f"      • {suggestion}")
+
+
+def run_executive_report(miner, videos, keyword):
+    """Run executive report"""
+    print(f"\n{Fore.CYAN}📊 Executive Report:{Style.RESET_ALL}")
+    report = miner.generate_executive_report(videos, keyword)
+    
+    summary = report['executive_summary']
+    print(f"   🎯 Opportunity Score: {summary['market_overview']['opportunity_score']}")
+    print(f"   📈 Market Size: {summary['market_overview']['market_size']}")
+    print(f"   🏆 Competition: {summary['market_overview']['competition_level']}")
+    
+    if report.get('actionable_insights'):
+        print(f"\n   🚀 Top Insights:")
+        for insight in report['actionable_insights'][:2]:
+            print(f"      • {insight['insight']}")
+            print(f"        Action: {insight['action']}")
+
+
 @click.command()
-@click.option('--keyword', '-k', required=True, help='Search keyword')
+@click.option('--keyword', '-k', help='Search keyword')
 @click.option('--max-results', '-n', default=20, help='Maximum number of results (default: 20)')
 @click.option('--order', '-o', 
               type=click.Choice(['relevance', 'date', 'rating', 'viewCount', 'title']),
@@ -1051,7 +1358,8 @@ class YouTubeMiner:
 @click.option('--temporal-analysis', '-time', is_flag=True, help='Show temporal patterns and optimal posting times')
 @click.option('--keyword-analysis', '-kwd', is_flag=True, help='Show keyword analysis and SEO opportunities')
 @click.option('--executive-report', '-rpt', is_flag=True, help='Generate comprehensive executive report with actionable insights')
-def main(keyword, max_results, order, days_back, region, duration, min_views, min_likes, output, analysis, title_analysis, competitor_analysis, temporal_analysis, keyword_analysis, executive_report):
+@click.option('--interactive', '-i', is_flag=True, help='Run in interactive mode (guided experience)')
+def main(keyword, max_results, order, days_back, region, duration, min_views, min_likes, output, analysis, title_analysis, competitor_analysis, temporal_analysis, keyword_analysis, executive_report, interactive):
     """YTMiner - YouTube video analysis CLI tool"""
     
     api_key = os.getenv('YOUTUBE_API_KEY')
@@ -1059,6 +1367,17 @@ def main(keyword, max_results, order, days_back, region, duration, min_views, mi
         print(f"{Fore.RED}Error: YouTube API key not found.{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}Set the YOUTUBE_API_KEY environment variable{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Example: set YOUTUBE_API_KEY=your_key_here{Style.RESET_ALL}")
+        return
+    
+    # Interactive mode
+    if interactive:
+        interactive_mode()
+        return
+    
+    # Validate required parameters for non-interactive mode
+    if not keyword:
+        print(f"{Fore.RED}Error: Keyword is required for non-interactive mode.{Style.RESET_ALL}")
+        print("Use --interactive (-i) for guided experience or provide --keyword (-k)")
         return
     
     published_after = None

@@ -53,6 +53,12 @@
 
 ## 🚀 **Quick Start**
 
+### 🎯 **Interactive Mode (Recommended for beginners)**
+```bash
+ytminer --interactive
+```
+The interactive mode guides you through the entire process with helpful prompts and recommendations based on your role. Perfect for users who want a guided experience without memorizing command-line flags.
+
 ### 1. **Get YouTube API Key**
 1. Visit [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project
@@ -101,6 +107,41 @@ ytminer -k "programming tutorial" -a -t -c -time -kwd -rpt
 
 ---
 
+## 🎯 **Interactive Mode**
+
+The easiest way to use YTMiner is through interactive mode. Simply run:
+
+```bash
+ytminer --interactive
+```
+
+### **What happens in interactive mode:**
+
+1. **Topic Selection**: Enter the keyword you want to analyze
+2. **Analysis Scope**: Choose how many videos to analyze (10-50)
+3. **Role Selection**: Pick your role for personalized recommendations:
+   - **Content Creator**: Title analysis, temporal patterns, competitor insights
+   - **Digital Marketer**: Market research, keyword analysis, executive reports
+   - **Researcher/Analyst**: Comprehensive data analysis, temporal patterns
+   - **Business Owner**: Strategic insights, competitor analysis, market intelligence
+4. **Analysis Selection**: Choose recommended analyses or select specific ones
+5. **Filters**: Optionally set time, region, and duration filters
+6. **Results**: Get a comprehensive analysis with actionable insights
+
+### **Example Interactive Session:**
+```
+🚀 Welcome to YTMiner Interactive Mode!
+
+1. What topic would you like to analyze? → "Pokemon"
+2. How many videos should I analyze? → 25
+3. What best describes you? → Content Creator
+4. Recommended analyses: Title, Temporal, Competitor, Keyword
+5. Any specific filters? → Last 7 days, Brazil region
+6. Analysis runs automatically with results!
+```
+
+---
+
 ## 💡 **Usage Examples**
 
 ### **Content Creators**
@@ -145,6 +186,12 @@ ytminer -k "science" -n 30 -t -c
 ---
 
 ## 📋 **Command Reference**
+
+### **Interactive Mode**
+| Command | Description |
+|---------|-------------|
+| `ytminer --interactive` | **Recommended**: Guided experience with prompts |
+| `ytminer -i` | Short form of interactive mode |
 
 ### **Basic Parameters**
 | Parameter | Description | Example |
