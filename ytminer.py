@@ -13,6 +13,10 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from tabulate import tabulate
 from colorama import init, Fore, Style
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 init()
 
@@ -97,7 +101,7 @@ class YouTubeMiner:
             
         df = pd.DataFrame(videos)
         df['published_at'] = pd.to_datetime(df['published_at'])
-        df['days_ago'] = (datetime.now() - df['published_at']).dt.days
+        df['days_ago'] = (datetime.now() - df['published_at'].dt.tz_localize(None)).dt.days
         
         analysis = {
             'total_videos': len(videos),

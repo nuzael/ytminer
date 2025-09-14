@@ -41,13 +41,26 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configure API Key
+
+#### **Method 1: .env file (Recommended)**
 ```bash
-# Method 1: Environment variable (Windows)
+# Create .env file from template
+copy env.example .env
+
+# Edit .env file and add your API key:
+YOUTUBE_API_KEY=your_youtube_api_key_here
+```
+
+#### **Method 2: Environment variable (Temporary)**
+```bash
+# Windows Command Prompt
 set YOUTUBE_API_KEY=your_key_here
 
-# Method 2: .env file (recommended)
-copy env.example .env
-# Edit .env with your YouTube API key
+# Windows PowerShell
+$env:YOUTUBE_API_KEY="your_key_here"
+
+# Linux/Mac
+export YOUTUBE_API_KEY=your_key_here
 ```
 
 ### 4. Test the Tool
@@ -124,17 +137,36 @@ The tool provides detailed analysis including:
 - Competitor analysis
 - Influencer identification
 
-## Files You Need to Configure
+## 🔧 Files You Need to Configure
 
-**Only edit these files:**
-- **`.env`** - Your API key (create from `env.example`)
-- **`config.py`** - Optional settings (create from `config_example.py`)
+### ✅ **REQUIRED - Edit This File:**
 
-**Don't edit these files:**
+#### **`.env`** - API Key Configuration
+```bash
+# Create from template
+copy env.example .env
+
+# Edit .env file and add your YouTube API key:
+YOUTUBE_API_KEY=your_youtube_api_key_here
+```
+
+### ℹ️ **Configuration:**
+- **API Key**: Configured in `.env` file
+- **Other parameters**: Passed via command line
+- **See options**: `python ytminer.py --help`
+
+### 📋 **Available Settings:**
+- **Output Format**: Always table (no other formats supported)
+- **Analysis**: Use `-a` flag to enable
+- **Filters**: Use command line parameters (see examples below)
+- **Export**: Use `-f filename.json` to save results
+
+### ❌ **DON'T Edit These Files:**
 - `ytminer.py` - Main script (ready to use)
-- `README.md` - Documentation
+- `README.md` - Documentation  
 - `requirements.txt` - Dependencies
 - All `.bat` files - Helper scripts
+- `env.example` - Template file
 
 ## Project Structure
 
@@ -142,8 +174,7 @@ The tool provides detailed analysis including:
 ytminer/
 ├── ytminer.py          # Main script
 ├── requirements.txt    # Dependencies
-├── env.example        # API key template
-├── config_example.py  # Config template
+├── env.example        # Configuration template
 ├── run.bat           # Windows runner
 ├── activate.bat      # Virtual env activator
 └── README.md         # This file
