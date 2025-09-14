@@ -66,10 +66,10 @@ export YOUTUBE_API_KEY=your_key_here
 ### 4. Test the Tool
 ```bash
 # Test help
-python ytminer.py --help
+ytminer --help
 
 # Test search
-python ytminer.py -k "Pokemon" -a
+ytminer -k "Pokemon" -a
 ```
 
 ## Usage
@@ -77,22 +77,22 @@ python ytminer.py -k "Pokemon" -a
 ### Basic Commands
 ```bash
 # Basic search
-python ytminer.py -k "Pokemon"
+ytminer -k "Pokemon"
 
 # Search with analysis
-python ytminer.py -k "Pokemon" -a
+ytminer -k "Pokemon" -a
 
 # Search last 7 days
-python ytminer.py -k "Pokemon" -d 7 -a
+ytminer -k "Pokemon" -d 7 -a
 
 # Most viewed videos from Brazil
-python ytminer.py -k "Pokemon" -o viewCount -r BR -n 30
+ytminer -k "Pokemon" -o viewCount -r BR -n 30
 
 # Short videos with minimum 100k views
-python ytminer.py -k "Pokemon" --duration short --min-views 100000
+ytminer -k "Pokemon" --duration short --min-views 100000
 
 # Save results to file
-python ytminer.py -k "Pokemon" -a -f results.json
+ytminer -k "Pokemon" -a -f results.json
 ```
 
 ### Available Parameters

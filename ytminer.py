@@ -179,14 +179,15 @@ def main(keyword, max_results, order, days_back, region, duration, min_views, mi
     for i, video in enumerate(videos, 1):
         table_data.append([
             i,
-            video['title'][:50] + '...' if len(video['title']) > 50 else video['title'],
-            video['channel'],
+            video['title'][:40] + '...' if len(video['title']) > 40 else video['title'],
+            video['channel'][:20] + '...' if len(video['channel']) > 20 else video['channel'],
             f"{video['view_count']:,}",
             f"{video['like_count']:,}",
-            video['published_at'][:10]
+            video['published_at'][:10],
+            video['url']
         ])
     
-    headers = ['#', 'Title', 'Channel', 'Views', 'Likes', 'Date']
+    headers = ['#', 'Title', 'Channel', 'Views', 'Likes', 'Date', 'URL']
     print(tabulate(table_data, headers=headers, tablefmt='grid'))
     
     print(f"\n{Fore.YELLOW}Top 5 videos:{Style.RESET_ALL}")

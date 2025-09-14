@@ -13,7 +13,7 @@ setup(
     description="CLI tool for YouTube video analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(),
+    py_modules=["ytminer"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
