@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"ytminer/ui"
+	"fmt"
 	"ytminer/youtube"
 )
 
@@ -9,7 +9,7 @@ import (
 func CreateYouTubeClient() (*youtube.Client, error) {
 	client, err := youtube.NewClient()
 	if err != nil {
-		ui.DisplayError("Failed to create YouTube client: " + err.Error())
+		fmt.Printf("Failed to create YouTube client: %v\n", err)
 		return nil, err
 	}
 	return client, nil
@@ -18,6 +18,6 @@ func CreateYouTubeClient() (*youtube.Client, error) {
 // HandleError handles errors in a standardized way
 func HandleError(err error, message string) {
 	if err != nil {
-		ui.DisplayError(message + ": " + err.Error())
+		fmt.Printf("%s: %v\n", message, err)
 	}
 }

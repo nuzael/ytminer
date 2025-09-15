@@ -7,13 +7,14 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/charmbracelet/huh"
-	"github.com/joho/godotenv"
 	"ytminer/analysis"
 	"ytminer/config"
 	"ytminer/ui"
 	"ytminer/utils"
 	"ytminer/youtube"
+
+	"github.com/charmbracelet/huh"
+	"github.com/joho/godotenv"
 )
 
 
@@ -97,7 +98,7 @@ func runCLIMode(keyword string, maxResults int, region, duration, analysis strin
 		return
 	}
 
-	// Search videos
+	// Search videos with loading
 	fmt.Printf("Searching for: %s\n", keyword)
 	
 	searchOpts := youtube.SearchOptions{
@@ -108,11 +109,18 @@ func runCLIMode(keyword string, maxResults int, region, duration, analysis strin
 		Order:      "relevance",
 	}
 
+	// Show loading while searching
+	stopLoading := utils.ShowLoading("🔍 Searching YouTube videos...")
+	
 	videos, err := client.SearchVideos(searchOpts)
+	stopLoading()
+	
 	if err != nil {
 		utils.HandleError(err, "Failed to search videos")
 		return
 	}
+
+	fmt.Printf("Found %d videos!\n\n", len(videos))
 
 	// Display results
 	ui.DisplayVideos(videos)
@@ -223,7 +231,7 @@ func showSearchForm() {
 		return
 	}
 
-	// Search videos
+	// Search videos with loading
 	ui.DisplayInfo("🔍 Searching for: " + keyword)
 	
 	searchOpts := youtube.SearchOptions{
@@ -234,7 +242,12 @@ func showSearchForm() {
 		Order:      "relevance",
 	}
 
+	// Show loading while searching
+	stopLoading := utils.ShowLoading("🔍 Searching YouTube videos...")
+	
 	videos, err := client.SearchVideos(searchOpts)
+	stopLoading()
+	
 	if err != nil {
 		utils.HandleError(err, "Failed to search videos")
 		showMainMenu()
@@ -260,7 +273,7 @@ func showSearchForm() {
 	}
 
 	if analyze {
-		runAnalysis(videos)
+		runAnalysis(videos, "")
 	} else {
 		showMainMenu()
 	}
@@ -303,7 +316,7 @@ func showAnalysisForm() {
 		return
 	}
 
-	// Search videos
+	// Search videos with loading
 	ui.DisplayInfo("🔍 Searching for: " + keyword)
 	
 	searchOpts := youtube.SearchOptions{
@@ -314,7 +327,12 @@ func showAnalysisForm() {
 		Order:      "relevance",
 	}
 
+	// Show loading while searching
+	stopLoading := utils.ShowLoading("🔍 Searching YouTube videos...")
+	
 	videos, err := client.SearchVideos(searchOpts)
+	stopLoading()
+	
 	if err != nil {
 		utils.HandleError(err, "Failed to search videos")
 		showMainMenu()
@@ -362,46 +380,70 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 		analysisType = selectedType
 	}
 
-	// Run selected analysis
+	// Run selected analysis with loading
 	switch analysisType {
 	case "growth":
+		stopLoading := utils.ShowLoading("📈 Analyzing growth patterns...")
 		growth := analyzer.AnalyzeGrowthPatterns()
+		stopLoading()
 		ui.DisplayGrowthAnalysis(growth)
 	case "titles":
+		stopLoading := utils.ShowLoading("📝 Analyzing title patterns...")
 		titles := analyzer.AnalyzeTitles()
+		stopLoading()
 		ui.DisplayTitleAnalysis(titles)
 	case "competitors":
+		stopLoading := utils.ShowLoading("🏢 Analyzing competitors...")
 		competitors := analyzer.AnalyzeCompetitors()
+		stopLoading()
 		ui.DisplayCompetitorAnalysis(competitors)
 	case "temporal":
+		stopLoading := utils.ShowLoading("⏰ Analyzing temporal patterns...")
 		temporal := analyzer.AnalyzeTemporal()
+		stopLoading()
 		ui.DisplayTemporalAnalysis(temporal)
 	case "keywords":
+		stopLoading := utils.ShowLoading("🔍 Analyzing keywords...")
 		keywords := analyzer.AnalyzeKeywords()
+		stopLoading()
 		ui.DisplayKeywordAnalysis(keywords)
 	case "executive":
+		stopLoading := utils.ShowLoading("💼 Generating executive report...")
 		report := analyzer.GenerateExecutiveReport()
+		stopLoading()
 		ui.DisplayExecutiveReport(report)
 	case "all":
-		// Run all analyses
+		// Run all analyses with loading
 		ui.DisplayInfo("Running comprehensive analysis...")
 		
+		stopLoading := utils.ShowLoading("📈 Analyzing growth patterns...")
 		growth := analyzer.AnalyzeGrowthPatterns()
+		stopLoading()
 		ui.DisplayGrowthAnalysis(growth)
 		
+		stopLoading = utils.ShowLoading("📝 Analyzing title patterns...")
 		titles := analyzer.AnalyzeTitles()
+		stopLoading()
 		ui.DisplayTitleAnalysis(titles)
 		
+		stopLoading = utils.ShowLoading("🏢 Analyzing competitors...")
 		competitors := analyzer.AnalyzeCompetitors()
+		stopLoading()
 		ui.DisplayCompetitorAnalysis(competitors)
 		
+		stopLoading = utils.ShowLoading("⏰ Analyzing temporal patterns...")
 		temporal := analyzer.AnalyzeTemporal()
+		stopLoading()
 		ui.DisplayTemporalAnalysis(temporal)
 		
+		stopLoading = utils.ShowLoading("🔍 Analyzing keywords...")
 		keywords := analyzer.AnalyzeKeywords()
+		stopLoading()
 		ui.DisplayKeywordAnalysis(keywords)
 		
+		stopLoading = utils.ShowLoading("💼 Generating executive report...")
 		report := analyzer.GenerateExecutiveReport()
+		stopLoading()
 		ui.DisplayExecutiveReport(report)
 	default:
 		ui.DisplayError("Unknown analysis type: " + analysisType)
