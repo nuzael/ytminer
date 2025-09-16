@@ -159,7 +159,7 @@ The easiest way to use YTMiner is through interactive mode. Simply run:
 ### What happens in interactive mode:
 
 1. **Topic Selection**: Enter the keyword you want to analyze
-2. **Filters**: Choose Region, Duration, Time Range, and Analysis Level
+2. **Filters**: Choose Region, Duration, Time Range, **Order**, and Analysis Level
 3. **Preview Choice**: Decide if you want to preview the results before analysis
 4. **Results/Analysis**:
    - If you chose to preview, a results table is shown and you can confirm running the analysis
@@ -170,7 +170,7 @@ The easiest way to use YTMiner is through interactive mode. Simply run:
 Welcome to YTMiner!
 
 1. Enter keyword → "Pokemon"
-2. Choose filters → Region: BR, Duration: any, Time Range: 30d, Level: balanced
+2. Choose filters → Region: BR, Duration: any, Time Range: 30d, Order: viewCount, Level: balanced
 3. Preview results before analysis? → Yes
 4. Table is shown → Confirm to run analysis
 ```
@@ -179,76 +179,34 @@ Welcome to YTMiner!
 
 ## Usage Examples
 
-### Content Creators
-```bash
-# Quick trend check
-# Windows
-.\ytminer.exe -k "Python tutorial" -l quick
-# Linux/Mac
-./ytminer.exe -k "Python tutorial" -l quick
-
-# Balanced content strategy
-# Windows
-.\ytminer.exe -k "cooking" -l balanced -a titles
-# Linux/Mac
-./ytminer.exe -k "cooking" -l balanced -a titles
-
-# Deep competitive analysis
-# Windows
-.\ytminer.exe -k "fitness" -l deep -a all
-# Linux/Mac
-./ytminer.exe -k "fitness" -l deep -a all
-```
-
 ### Go straight to analysis (skip preview)
 ```bash
 # Skip preview; you'll be prompted for the analysis type interactively
 .\ytminer.exe -k "python tutorial" -l quick --no-preview
 
-# Skip preview and specify analysis type
-.\ytminer.exe -k "python tutorial" -l balanced -a growth --no-preview
+# Skip preview and specify analysis type, order by most viewed
+.\ytminer.exe -k "python tutorial" -l balanced -a growth -o viewCount --no-preview
 ```
 
 ### Digital Marketers
 ```bash
 # Market research with full analysis
 # Windows
-.\ytminer.exe -k "marketing strategies" -l balanced -a executive
+.\ytminer.exe -k "marketing strategies" -l balanced -a executive -o date
 # Linux/Mac
-./ytminer.exe -k "marketing strategies" -l balanced -a executive
+./ytminer.exe -k "marketing strategies" -l balanced -a executive -o date
 
 # Competitor intelligence
 # Windows
-.\ytminer.exe -k "your brand" -l balanced -a competitors -a keywords
+.\ytminer.exe -k "your brand" -l balanced -a competitors -a keywords -o relevance
 # Linux/Mac
-./ytminer.exe -k "your brand" -l balanced -a competitors -a keywords
+./ytminer.exe -k "your brand" -l balanced -a competitors -a keywords -o relevance
 
 # Trend analysis
 # Windows
-.\ytminer.exe -k "trending topic" -l quick -a growth
+.\ytminer.exe -k "trending topic" -l quick -a growth -o viewCount
 # Linux/Mac
-./ytminer.exe -k "trending topic" -l quick -a growth
-```
-
-### Researchers & Analysts
-```bash
-# Academic research
-# Windows
-.\ytminer.exe -k "machine learning" -l deep -a all
-# Linux/Mac
-./ytminer.exe -k "machine learning" -l deep -a all
-
-# Engagement studies
-# Windows
-.\ytminer.exe -k "education" -l balanced -a growth -a temporal
-# Linux/Mac
-./ytminer.exe -k "education" -l balanced -a growth -a temporal
-
-# Content pattern analysis
-# Windows
-.\ytminer.exe -k "science" -l quick -a titles -a competitors
-# Linux/Mac
-./ytminer.exe -k "science" -l quick -a titles -a competitors
+./ytminer.exe -k "trending topic" -l quick -a growth -o viewCount
 ```
 
 ---
@@ -264,36 +222,12 @@ Welcome to YTMiner!
 | `-a, --analysis` | Analysis type | `-a growth` |
 | `-l, --level` | Analysis level (quick, balanced, deep) | `-l balanced` |
 | `-t, --time` | Time range (any, 7d, 30d, 90d, 1y) | `-t 30d` |
+| `-o, --order` | Search order (`relevance`, `date`, `viewCount`, `rating`, `title`) | `-o viewCount` |
 | `--no-preview` | Skip preview and run analysis directly | `--no-preview` |
 | `--help` | Show help message | `--help` |
 | `--version` | Show version information | `--version` |
 
-### Analysis Types
-| Analysis | Flag | Description |
-|----------|------|-------------|
-| **Growth Analysis** | `-a growth` | Performance patterns and trends |
-| **Title Analysis** | `-a titles` | Winning title formulas and patterns |
-| **Competitor Analysis** | `-a competitors` | Market leaders and positioning |
-| **Temporal Analysis** | `-a temporal` | Optimal posting times |
-| **Keyword Analysis** | `-a keywords` | SEO and keyword opportunities |
-| **Executive Report** | `-a executive` | Comprehensive strategic analysis |
-| **All Analyses** | `-a all` | Run all analysis types |
-
-### **Analysis Levels**
-| Level | Flag | Units | Videos | Time | Best For |
-|-------|------|-------|--------|------|----------|
-| **Quick Scan** | `-l quick` | ~200 | 50 | 30-60s | Exploration, demos |
-| **Balanced** | `-l balanced` | ~1000 | 200 | 2-3min | Regular analysis |
-| **Deep Dive** | `-l deep` | ~3000 | 600 | 5-8min | Strategic analysis |
-
-### **Time Ranges**
-| Range | Flag | Description | Use Case |
-|-------|------|-------------|----------|
-| **Any time** | `-t any` | No time filter | Historical analysis |
-| **Last 7 days** | `-t 7d` | Recent videos only | Trending content |
-| **Last 30 days** | `-t 30d` | Past month | Current trends |
-| **Last 90 days** | `-t 90d` | Past quarter | Seasonal analysis |
-| **Last year** | `-t 1y` | Past year | Annual trends |
+For methodology details, see `docs/METRICS.md`.
 
 ---
 

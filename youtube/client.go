@@ -131,55 +131,71 @@ func (c *Client) searchSingle(opts SearchOptions) ([]Video, error) {
 func (c *Client) searchBalanced(opts SearchOptions, seenIDs map[string]bool) []Video {
 	var allVideos []Video
 	
-	// Search 1: Original query
-	videos1 := c.searchWithParams(opts.Query, "any", "any", "relevance", 50, opts)
-	allVideos = append(allVideos, c.filterUniqueVideos(videos1, seenIDs)...)
-
-	// Search 2: Different region
+	// First: user-selected settings (order/region/duration)
+	userOrder := opts.Order
+	if userOrder == "" { userOrder = "relevance" }
+	videos0 := c.searchWithParams(opts.Query, opts.Region, opts.Duration, userOrder, 50, opts)
+	allVideos = append(allVideos, c.filterUniqueVideos(videos0, seenIDs)...)
+	
+	// Search 1: Original query (broad) – keep relevance for diversity if user order differs
+	if userOrder != "relevance" || opts.Region != "any" || opts.Duration != "any" {
+		videos1 := c.searchWithParams(opts.Query, "any", "any", "relevance", 50, opts)
+		allVideos = append(allVideos, c.filterUniqueVideos(videos1, seenIDs)...)
+	}
+	
+	// Search 2: Different region (only when region not fixed)
 	if opts.Region == "any" || opts.Region == "" {
-		videos2 := c.searchWithParams(opts.Query, "BR", "any", "relevance", 50, opts)
+		videos2 := c.searchWithParams(opts.Query, "BR", "any", userOrder, 50, opts)
 		allVideos = append(allVideos, c.filterUniqueVideos(videos2, seenIDs)...)
 	}
-
-	// Search 3: Different duration
+	
+	// Search 3: Different duration (only when duration not fixed)
 	if opts.Duration == "any" || opts.Duration == "" {
-		videos3 := c.searchWithParams(opts.Query, "any", "medium", "relevance", 50, opts)
+		videos3 := c.searchWithParams(opts.Query, "any", "medium", userOrder, 50, opts)
 		allVideos = append(allVideos, c.filterUniqueVideos(videos3, seenIDs)...)
 	}
-
-	// Search 4: Different order
+	
+	// Search 4: Different order (date) for recency
 	videos4 := c.searchWithParams(opts.Query, "any", "any", "date", 50, opts)
 	allVideos = append(allVideos, c.filterUniqueVideos(videos4, seenIDs)...)
-
+	
 	return allVideos
 }
 
 func (c *Client) searchDeepDive(opts SearchOptions, seenIDs map[string]bool) []Video {
 	var allVideos []Video
 	
-	// Search 1-3: Original query with different orders
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "relevance", 50, opts), seenIDs)...)
+	userOrder := opts.Order
+	if userOrder == "" { userOrder = "relevance" }
+	
+	// Search 0: user-selected settings
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, opts.Region, opts.Duration, userOrder, 50, opts), seenIDs)...)
+	
+	// Search 1-3: Original query with different orders (ensure diversity)
+	if userOrder != "relevance" {
+		allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "relevance", 50, opts), seenIDs)...)
+	}
 	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "viewCount", 50, opts), seenIDs)...)
 	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "date", 50, opts), seenIDs)...)
-
+	
 	// Search 4-6: Different regions
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "BR", "any", "relevance", 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "US", "any", "relevance", 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "GB", "any", "relevance", 50, opts), seenIDs)...)
-
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "BR", "any", userOrder, 50, opts), seenIDs)...)
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "US", "any", userOrder, 50, opts), seenIDs)...)
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "GB", "any", userOrder, 50, opts), seenIDs)...)
+	
 	// Search 7-9: Different durations
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "short", "relevance", 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "medium", "relevance", 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "long", "relevance", 50, opts), seenIDs)...)
-
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "short", userOrder, 50, opts), seenIDs)...)
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "medium", userOrder, 50, opts), seenIDs)...)
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "long", userOrder, 50, opts), seenIDs)...)
+	
 	// Search 10-12: Related queries with different approaches
 	relatedQuery1 := opts.Query + " tutorial"
 	relatedQuery2 := opts.Query + " guide"
 	relatedQuery3 := opts.Query + " tips"
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery1, "any", "any", "relevance", 50, opts), seenIDs)...)
+	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery1, "any", "any", userOrder, 50, opts), seenIDs)...)
 	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery2, "any", "any", "viewCount", 50, opts), seenIDs)...)
 	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery3, "any", "any", "date", 50, opts), seenIDs)...)
-
+	
 	return allVideos
 }
 

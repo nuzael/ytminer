@@ -35,6 +35,7 @@ func main() {
 		analysis    = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
 		level       = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
 		timeRange   = flag.String("t", "any", "Time range (any, 7d, 30d, 90d, 1y)")
+		order      = flag.String("o", "relevance", "Search order (relevance, date, viewCount, rating, title)")
 		noPreview   = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
 		help        = flag.Bool("help", false, "Show help")
 		version     = flag.Bool("version", false, "Show version")
@@ -58,7 +59,7 @@ func main() {
 
 	// If keyword is provided, run in CLI mode
 	if *keyword != "" {
-		runCLIMode(*keyword, *region, *duration, *analysis, *level, *timeRange, *noPreview)
+		runCLIMode(*keyword, *region, *duration, *analysis, *level, *timeRange, *order, *noPreview)
 		return
 	}
 
@@ -80,6 +81,7 @@ func showHelp() {
 	fmt.Println("  -a string    Analysis type: growth, titles, competitors, temporal, keywords, executive, all")
 	fmt.Println("  -l string    Analysis level: quick, balanced, deep (default: balanced)")
 	fmt.Println("  -t string    Time range: any, 7d, 30d, 90d, 1y (default: any)")
+	fmt.Println("  -o string    Search order: relevance, date, viewCount, rating, title (default: relevance)")
 	fmt.Println("  --no-preview Skip preview table and run analysis directly")
 	fmt.Println("  --help       Show help")
 	fmt.Println("  --version    Show version")
@@ -107,7 +109,7 @@ func showHelp() {
 	fmt.Println()
 }
 
-func runCLIMode(keyword string, region, duration, analysis, level, timeRange string, noPreview bool) {
+func runCLIMode(keyword string, region, duration, analysis, level, timeRange, order string, noPreview bool) {
 	// Create YouTube client
 	client, err := utils.CreateYouTubeClient()
 	if err != nil {
@@ -121,14 +123,14 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange str
 	publishedAfter, publishedBefore := parseTimeRange(timeRange)
 	
 	// Search videos with loading
-	fmt.Printf("Searching for: %s (Level: %s, Time: %s, Region: %s, Duration: %s)\n", keyword, level, timeRange, region, duration)
+	fmt.Printf("Searching for: %s (Level: %s, Time: %s, Region: %s, Duration: %s, Order: %s)\n", keyword, level, timeRange, region, duration, order)
 	
 	scrollOpts := youtube.SearchOptions{
 		Query:           keyword,
 		MaxResults:      50, // Fixed at 50 per search (controlled by level)
 		Region:          region,
 		Duration:        duration,
-		Order:           "relevance",
+		Order:           order,
 		Level:           analysisLevel,
 		PublishedAfter:  publishedAfter,
 		PublishedBefore: publishedBefore,
@@ -201,6 +203,7 @@ func showSearchForm() {
 	var duration string
 	var level string
 	var timeRange string
+	var order string
 	var previewBefore bool
 
 	form := huh.NewForm(
@@ -250,6 +253,19 @@ func showSearchForm() {
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().
+				Title("🗂️ Order").
+				Description("Search results order").
+				Options(
+					huh.NewOption("Relevance", "relevance"),
+					huh.NewOption("Most Recent", "date"),
+					huh.NewOption("Most Viewed", "viewCount"),
+					huh.NewOption("Rating", "rating"),
+					huh.NewOption("Title (A-Z)", "title"),
+				).
+				Value(&order),
+		),
+		huh.NewGroup(
+			huh.NewSelect[string]().
 				Title("📊 Analysis Level").
 				Description("Choose analysis depth").
 				Options(
@@ -285,14 +301,14 @@ func showSearchForm() {
 	}
 
 	// Search videos with loading
-	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ", Region: " + region + ", Duration: " + duration + ")")
+	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ", Region: " + region + ", Duration: " + duration + ", Order: " + order + ")")
 	
 	searchOpts := youtube.SearchOptions{
 		Query:           keyword,
 		MaxResults:      50, // Fixed at 50 per search (controlled by level)
 		Region:          region,
 		Duration:        duration,
-		Order:           "relevance",
+		Order:           order,
 		Level:           analysisLevel,
 		PublishedAfter:  publishedAfter,
 		PublishedBefore: publishedBefore,

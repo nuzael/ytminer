@@ -138,7 +138,7 @@ func (a *Analyzer) AnalyzeGrowthPatterns() GrowthPattern {
 		totalLikes += video.Likes
 		totalComments += video.Comments
 
-		engagement := float64(video.Likes+video.Comments) / float64(video.Views) * 100
+		engagement := float64(video.Likes+video.Comments) / max1(float64(video.Views)) * 100
 		topPerformers = append(topPerformers, VideoPerformance{
 			Title:      video.Title,
 			Channel:    video.Channel,
@@ -153,8 +153,6 @@ func (a *Analyzer) AnalyzeGrowthPatterns() GrowthPattern {
 	sort.Slice(topPerformers, func(i, j int) bool {
 		return topPerformers[i].Engagement > topPerformers[j].Engagement
 	})
-
-	// Take top 5
 	if len(topPerformers) > 5 {
 		topPerformers = topPerformers[:5]
 	}
@@ -163,8 +161,8 @@ func (a *Analyzer) AnalyzeGrowthPatterns() GrowthPattern {
 	avgLikes := float64(totalLikes) / float64(len(a.videos))
 	avgComments := float64(totalComments) / float64(len(a.videos))
 
-	// Calculate growth rate (simplified)
-	growthRate := a.calculateGrowthRate()
+	// Calculate growth slope (simple linear regression on views vs index)
+	growthRate := a.calculateGrowthSlope()
 
 	insights := a.generateGrowthInsights(avgViews, avgLikes, growthRate)
 
@@ -184,78 +182,56 @@ func (a *Analyzer) AnalyzeTitles() TitleAnalysis {
 		return TitleAnalysis{}
 	}
 
-	// Extract words and phrases
 	wordCounts := make(map[string]int)
 	phraseCounts := make(map[string]int)
 	emojiCounts := make(map[string]int)
 	var patterns []string
 
 	for _, video := range a.videos {
-		title := strings.ToLower(video.Title)
-		
-		// Extract words
-		words := strings.Fields(title)
-		for _, word := range words {
-			// Clean word
-			word = strings.Trim(word, ".,!?()[]{}")
-			if len(word) > 2 {
-				wordCounts[word]++
-			}
+		titleLower := strings.ToLower(video.Title)
+
+		// Words (normalized, stopwords removed)
+		words := utils.Tokenize(video.Title)
+		for _, w := range words {
+			wordCounts[w]++
 		}
 
-		// Extract phrases (2-3 words)
+		// Phrases (bigrams) from tokenized words
 		for i := 0; i < len(words)-1; i++ {
 			phrase := words[i] + " " + words[i+1]
 			phraseCounts[phrase]++
 		}
 
-		// Extract emojis (robust)
+		// Emojis
 		for _, e := range utils.ExtractEmojis(video.Title) {
 			emojiCounts[e]++
 		}
-		
-		// Analyze patterns
-		if strings.Contains(title, "tutorial") {
-			patterns = append(patterns, "Tutorial Pattern")
-		}
-		if strings.Contains(title, "how to") {
-			patterns = append(patterns, "How-to Pattern")
-		}
-		if strings.Contains(title, "2024") || strings.Contains(title, "2023") {
-			patterns = append(patterns, "Year Pattern")
-		}
+
+		// Patterns
+		if strings.Contains(titleLower, "tutorial") { patterns = append(patterns, "Tutorial Pattern") }
+		if strings.Contains(titleLower, "how to") { patterns = append(patterns, "How-to Pattern") }
+		if strings.Contains(titleLower, "2024") || strings.Contains(titleLower, "2023") { patterns = append(patterns, "Year Pattern") }
 	}
 
-	// Convert to slices and sort
 	var commonWords []WordCount
 	for word, count := range wordCounts {
 		commonWords = append(commonWords, WordCount{Word: word, Count: count})
 	}
-	sort.Slice(commonWords, func(i, j int) bool {
-		return commonWords[i].Count > commonWords[j].Count
-	})
-	if len(commonWords) > 10 {
-		commonWords = commonWords[:10]
-	}
+	sort.Slice(commonWords, func(i, j int) bool { return commonWords[i].Count > commonWords[j].Count })
+	if len(commonWords) > 10 { commonWords = commonWords[:10] }
 
 	var commonPhrases []PhraseCount
 	for phrase, count := range phraseCounts {
 		commonPhrases = append(commonPhrases, PhraseCount{Phrase: phrase, Count: count})
 	}
-	sort.Slice(commonPhrases, func(i, j int) bool {
-		return commonPhrases[i].Count > commonPhrases[j].Count
-	})
-	if len(commonPhrases) > 5 {
-		commonPhrases = commonPhrases[:5]
-	}
+	sort.Slice(commonPhrases, func(i, j int) bool { return commonPhrases[i].Count > commonPhrases[j].Count })
+	if len(commonPhrases) > 5 { commonPhrases = commonPhrases[:5] }
 
 	var emojis []EmojiCount
 	for emoji, count := range emojiCounts {
 		emojis = append(emojis, EmojiCount{Emoji: emoji, Count: count})
 	}
-	sort.Slice(emojis, func(i, j int) bool {
-		return emojis[i].Count > emojis[j].Count
-	})
+	sort.Slice(emojis, func(i, j int) bool { return emojis[i].Count > emojis[j].Count })
 
 	insights := a.generateTitleInsights(commonWords, commonPhrases, patterns)
 
@@ -325,136 +301,120 @@ func (a *Analyzer) AnalyzeCompetitors() CompetitorAnalysis {
 }
 
 func (a *Analyzer) AnalyzeTemporal() TemporalAnalysis {
-	if len(a.videos) == 0 {
-		return TemporalAnalysis{}
-	}
+	if len(a.videos) == 0 { return TemporalAnalysis{} }
 
 	hourStats := make(map[int]*HourStats)
+	hourN := make(map[int]int)
 	dayStats := make(map[string]*DayStats)
+	dayN := make(map[string]int)
 
 	for _, video := range a.videos {
 		hour := video.PublishedAt.Hour()
 		day := video.PublishedAt.Weekday().String()
 
-		// Hour stats
-		if stats, exists := hourStats[hour]; exists {
-			stats.AvgViews = (stats.AvgViews + float64(video.Views)) / 2
-			stats.AvgLikes = (stats.AvgLikes + float64(video.Likes)) / 2
-			stats.Engagement = (stats.Engagement + float64(video.Likes+video.Comments)/float64(video.Views)*100) / 2
+		eng := float64(video.Likes+video.Comments) / max1(float64(video.Views)) * 100
+
+		if stats, ok := hourStats[hour]; ok {
+			stats.AvgViews += float64(video.Views)
+			stats.AvgLikes += float64(video.Likes)
+			stats.Engagement += eng
+			hourN[hour]++
 		} else {
-			engagement := float64(video.Likes+video.Comments) / float64(video.Views) * 100
-			hourStats[hour] = &HourStats{
-				Hour:       hour,
-				AvgViews:   float64(video.Views),
-				AvgLikes:   float64(video.Likes),
-				Engagement: engagement,
-			}
+			hourStats[hour] = &HourStats{Hour: hour, AvgViews: float64(video.Views), AvgLikes: float64(video.Likes), Engagement: eng}
+			hourN[hour] = 1
 		}
 
-		// Day stats
-		if stats, exists := dayStats[day]; exists {
-			stats.AvgViews = (stats.AvgViews + float64(video.Views)) / 2
-			stats.AvgLikes = (stats.AvgLikes + float64(video.Likes)) / 2
-			stats.Engagement = (stats.Engagement + float64(video.Likes+video.Comments)/float64(video.Views)*100) / 2
+		if stats, ok := dayStats[day]; ok {
+			stats.AvgViews += float64(video.Views)
+			stats.AvgLikes += float64(video.Likes)
+			stats.Engagement += eng
+			dayN[day]++
 		} else {
-			engagement := float64(video.Likes+video.Comments) / float64(video.Views) * 100
-			dayStats[day] = &DayStats{
-				Day:        day,
-				AvgViews:   float64(video.Views),
-				AvgLikes:   float64(video.Likes),
-				Engagement: engagement,
-			}
+			dayStats[day] = &DayStats{Day: day, AvgViews: float64(video.Views), AvgLikes: float64(video.Likes), Engagement: eng}
+			dayN[day] = 1
 		}
 	}
 
-	// Convert to slices and sort
+	// finalize means
+	const minN = 5
 	var bestHours []HourStats
-	for _, stats := range hourStats {
-		bestHours = append(bestHours, *stats)
+	for h, s := range hourStats {
+		n := hourN[h]
+		if n < minN { continue }
+		s.AvgViews /= float64(n)
+		s.AvgLikes /= float64(n)
+		s.Engagement /= float64(n)
+		bestHours = append(bestHours, *s)
 	}
-	sort.Slice(bestHours, func(i, j int) bool {
-		return bestHours[i].Engagement > bestHours[j].Engagement
-	})
+	sort.Slice(bestHours, func(i, j int) bool { return bestHours[i].Engagement > bestHours[j].Engagement })
 
 	var bestDays []DayStats
-	for _, stats := range dayStats {
-		bestDays = append(bestDays, *stats)
+	for d, s := range dayStats {
+		n := dayN[d]
+		if n < minN { continue }
+		s.AvgViews /= float64(n)
+		s.AvgLikes /= float64(n)
+		s.Engagement /= float64(n)
+		bestDays = append(bestDays, *s)
 	}
-	sort.Slice(bestDays, func(i, j int) bool {
-		return bestDays[i].Engagement > bestDays[j].Engagement
-	})
+	sort.Slice(bestDays, func(i, j int) bool { return bestDays[i].Engagement > bestDays[j].Engagement })
 
 	insights := a.generateTemporalInsights(bestHours, bestDays)
-
-	return TemporalAnalysis{
-		BestHours: bestHours,
-		BestDays:  bestDays,
-		Insights:  insights,
-	}
+	return TemporalAnalysis{ BestHours: bestHours, BestDays: bestDays, Insights: insights }
 }
 
 func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
-	if len(a.videos) == 0 {
-		return KeywordAnalysis{}
-	}
+	if len(a.videos) == 0 { return KeywordAnalysis{} }
 
 	keywordStats := make(map[string]*KeywordStats)
 
 	for _, video := range a.videos {
-		words := strings.Fields(strings.ToLower(video.Title))
-		engagement := float64(video.Likes+video.Comments) / float64(video.Views) * 100
-
-		for _, word := range words {
-			word = strings.Trim(word, ".,!?()[]{}")
-			if len(word) > 3 {
-				if stats, exists := keywordStats[word]; exists {
-					stats.Frequency++
-					stats.AvgViews = (stats.AvgViews + float64(video.Views)) / 2
-					stats.Engagement = (stats.Engagement + engagement) / 2
-				} else {
-					keywordStats[word] = &KeywordStats{
-						Keyword:    word,
-						Frequency:  1,
-						AvgViews:   float64(video.Views),
-						Engagement: engagement,
-					}
-				}
+		words := utils.Tokenize(video.Title)
+		engagement := float64(video.Likes+video.Comments) / max1(float64(video.Views)) * 100
+		for _, w := range words {
+			if stats, ok := keywordStats[w]; ok {
+				stats.Frequency++
+				stats.AvgViews += float64(video.Views)
+				stats.Engagement += engagement
+			} else {
+				keywordStats[w] = &KeywordStats{ Keyword: w, Frequency: 1, AvgViews: float64(video.Views), Engagement: engagement }
 			}
 		}
 	}
 
-	// Convert to slices and sort
 	var trendingKeywords []KeywordStats
-	for _, stats := range keywordStats {
-		trendingKeywords = append(trendingKeywords, *stats)
-	}
-	sort.Slice(trendingKeywords, func(i, j int) bool {
-		return trendingKeywords[i].Frequency > trendingKeywords[j].Frequency
-	})
-	if len(trendingKeywords) > 10 {
-		trendingKeywords = trendingKeywords[:10]
-	}
+	for _, s := range keywordStats { trendingKeywords = append(trendingKeywords, *s) }
+	sort.Slice(trendingKeywords, func(i, j int) bool { return trendingKeywords[i].Frequency > trendingKeywords[j].Frequency })
+	if len(trendingKeywords) > 10 { trendingKeywords = trendingKeywords[:10] }
 
-	// Long tail keywords (less frequent but high engagement)
 	var longTailKeywords []KeywordStats
-	for _, stats := range keywordStats {
-		if stats.Frequency < 3 && stats.Engagement > 5.0 {
-			longTailKeywords = append(longTailKeywords, *stats)
+	for _, s := range keywordStats {
+		if s.Frequency < 3 && s.Engagement/float64(s.Frequency) > 5.0 {
+			longTailKeywords = append(longTailKeywords, *s)
 		}
 	}
-	sort.Slice(longTailKeywords, func(i, j int) bool {
-		return longTailKeywords[i].Engagement > longTailKeywords[j].Engagement
-	})
+	sort.Slice(longTailKeywords, func(i, j int) bool { return longTailKeywords[i].Engagement/float64(longTailKeywords[i].Frequency) > longTailKeywords[j].Engagement/float64(longTailKeywords[j].Frequency) })
+
+	// finalize means
+	for i := range trendingKeywords {
+		fk := trendingKeywords[i].Frequency
+		if fk > 0 {
+			trendingKeywords[i].AvgViews /= float64(fk)
+			trendingKeywords[i].Engagement /= float64(fk)
+		}
+	}
+	for i := range longTailKeywords {
+		fk := longTailKeywords[i].Frequency
+		if fk > 0 {
+			longTailKeywords[i].AvgViews /= float64(fk)
+			longTailKeywords[i].Engagement /= float64(fk)
+		}
+	}
 
 	seoOpportunities := a.generateSEOOpportunities(trendingKeywords, longTailKeywords)
 	insights := a.generateKeywordInsights(trendingKeywords, longTailKeywords)
 
-	return KeywordAnalysis{
-		TrendingKeywords: trendingKeywords,
-		LongTailKeywords: longTailKeywords,
-		SEOOpportunities: seoOpportunities,
-		Insights:         insights,
-	}
+	return KeywordAnalysis{ TrendingKeywords: trendingKeywords, LongTailKeywords: longTailKeywords, SEOOpportunities: seoOpportunities, Insights: insights }
 }
 
 func (a *Analyzer) GenerateExecutiveReport() ExecutiveReport {
@@ -484,28 +444,30 @@ func (a *Analyzer) GenerateExecutiveReport() ExecutiveReport {
 }
 
 // Helper methods
-func (a *Analyzer) calculateGrowthRate() float64 {
-	if len(a.videos) < 2 {
-		return 0
-	}
-
+func (a *Analyzer) calculateGrowthSlope() float64 {
+	if len(a.videos) < 2 { return 0 }
 	// Sort by published date
-	sortedVideos := make([]youtube.Video, len(a.videos))
-	copy(sortedVideos, a.videos)
-	sort.Slice(sortedVideos, func(i, j int) bool {
-		return sortedVideos[i].PublishedAt.Before(sortedVideos[j].PublishedAt)
-	})
-
-	// Calculate growth rate between first and last video
-	firstViews := float64(sortedVideos[0].Views)
-	lastViews := float64(sortedVideos[len(sortedVideos)-1].Views)
-	
-	if firstViews == 0 {
-		return 0
+	sorted := make([]youtube.Video, len(a.videos))
+	copy(sorted, a.videos)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].PublishedAt.Before(sorted[j].PublishedAt) })
+	// Simple linear regression on index (time proxy) vs views
+	n := float64(len(sorted))
+	var sumX, sumY, sumXY, sumXX float64
+	for i, v := range sorted {
+		x := float64(i)
+		y := float64(v.Views)
+		sumX += x; sumY += y; sumXY += x*y; sumXX += x*x
 	}
-
-	return ((lastViews - firstViews) / firstViews) * 100
+	den := (n*sumXX - sumX*sumX)
+	if den == 0 { return 0 }
+	slope := (n*sumXY - sumX*sumY) / den
+	// Express as percent of first views if possível
+	base := float64(sorted[0].Views)
+	if base <= 0 { return 0 }
+	return slope / base * 100
 }
+
+func max1(v float64) float64 { if v <= 0 { return 1 } ; return v }
 
 func (a *Analyzer) generateGrowthInsights(avgViews, avgLikes, growthRate float64) []string {
 	var insights []string
