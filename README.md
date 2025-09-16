@@ -62,6 +62,27 @@ A command-line tool for YouTube content creators, marketers, and researchers to 
 ```
 The interactive mode guides you through the entire process with helpful prompts and recommendations. Perfect for users who want a guided experience without memorizing command-line flags.
 
+### Analysis Levels
+YTMiner offers three analysis levels to optimize API usage and analysis depth:
+
+#### Quick Scan (~200 units, 50 videos, 30-60s)
+- **Best for**: Quick exploration, demos, trend validation
+- **Data**: Single search with 50 videos
+- **Insights**: Basic patterns and trends
+- **Use case**: "Is this topic worth analyzing further?"
+
+#### Balanced (~1000 units, 200 videos, 2-3min)
+- **Best for**: Regular content creators, marketers
+- **Data**: 4 searches across different parameters
+- **Insights**: Reliable patterns and recommendations
+- **Use case**: "What should my content strategy be?"
+
+#### Deep Dive (~3000 units, 600 videos, 5-8min)
+- **Best for**: Strategic analysis, research, business decisions
+- **Data**: 12 searches across regions, durations, and related topics
+- **Insights**: Comprehensive market intelligence
+- **Use case**: "What's the complete competitive landscape?"
+
 ### 1. Get YouTube API Key
 1. Visit [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project
@@ -101,11 +122,24 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 # Linux/Mac
 ./ytminer.exe --help
 
-# Test comprehensive analysis
+# Test different analysis levels with time filters
+# Quick scan - last 7 days
 # Windows
-.\ytminer.exe -k "programming tutorial" -n 25 -a all
+.\ytminer.exe -k "programming tutorial" -l quick -t 7d
 # Linux/Mac
-./ytminer.exe -k "programming tutorial" -n 25 -a all
+./ytminer.exe -k "programming tutorial" -l quick -t 7d
+
+# Balanced analysis - last 30 days
+# Windows
+.\ytminer.exe -k "programming tutorial" -l balanced -a all -t 30d
+# Linux/Mac
+./ytminer.exe -k "programming tutorial" -l balanced -a all -t 30d
+
+# Deep dive analysis - last 90 days
+# Windows
+.\ytminer.exe -k "programming tutorial" -l deep -a all -t 90d
+# Linux/Mac
+./ytminer.exe -k "programming tutorial" -l deep -a all -t 90d
 ```
 
 ---
@@ -147,29 +181,23 @@ Welcome to YTMiner!
 
 ### Content Creators
 ```bash
-# Complete creator analysis
+# Quick trend check
 # Windows
-.\ytminer.exe -k "Python tutorial" -n 25 -a all
+.\ytminer.exe -k "Python tutorial" -l quick
 # Linux/Mac
-./ytminer.exe -k "Python tutorial" -n 25 -a all
+./ytminer.exe -k "Python tutorial" -l quick
 
-# Find winning title patterns
+# Balanced content strategy
 # Windows
-.\ytminer.exe -k "cooking" -n 20 -a titles
+.\ytminer.exe -k "cooking" -l balanced -a titles
 # Linux/Mac
-./ytminer.exe -k "cooking" -n 20 -a titles
+./ytminer.exe -k "cooking" -l balanced -a titles
 
-# Discover optimal posting times
+# Deep competitive analysis
 # Windows
-.\ytminer.exe -k "fitness" -n 30 -a temporal
+.\ytminer.exe -k "fitness" -l deep -a all
 # Linux/Mac
-./ytminer.exe -k "fitness" -n 30 -a temporal
-
-# Analyze competitors
-# Windows
-.\ytminer.exe -k "gaming" -n 20 -a competitors
-# Linux/Mac
-./ytminer.exe -k "gaming" -n 20 -a competitors
+./ytminer.exe -k "fitness" -l deep -a all
 ```
 
 ### Digital Marketers
@@ -222,10 +250,11 @@ Welcome to YTMiner!
 | Parameter | Description | Example |
 |-----------|-------------|---------|
 | `-k, --keyword` | Search keyword | `-k "Python tutorial"` |
-| `-n, --max-results` | Maximum results (1-50) | `-n 25` |
 | `-r, --region` | Country code (BR, US, GB, any) | `-r BR` |
 | `-d, --duration` | Video length (short, medium, long, any) | `-d short` |
 | `-a, --analysis` | Analysis type | `-a growth` |
+| `-l, --level` | Analysis level (quick, balanced, deep) | `-l balanced` |
+| `-t, --time` | Time range (any, 7d, 30d, 90d, 1y) | `-t 30d` |
 | `--help` | Show help message | `--help` |
 | `--version` | Show version information | `--version` |
 
@@ -239,6 +268,22 @@ Welcome to YTMiner!
 | **Keyword Analysis** | `-a keywords` | SEO and keyword opportunities |
 | **Executive Report** | `-a executive` | Comprehensive strategic analysis |
 | **All Analyses** | `-a all` | Run all analysis types |
+
+### **Analysis Levels**
+| Level | Flag | Units | Videos | Time | Best For |
+|-------|------|-------|--------|------|----------|
+| **Quick Scan** | `-l quick` | ~200 | 50 | 30-60s | Exploration, demos |
+| **Balanced** | `-l balanced` | ~1000 | 200 | 2-3min | Regular analysis |
+| **Deep Dive** | `-l deep` | ~3000 | 600 | 5-8min | Strategic analysis |
+
+### **Time Ranges**
+| Range | Flag | Description | Use Case |
+|-------|------|-------------|----------|
+| **Any time** | `-t any` | No time filter | Historical analysis |
+| **Last 7 days** | `-t 7d` | Recent videos only | Trending content |
+| **Last 30 days** | `-t 30d` | Past month | Current trends |
+| **Last 90 days** | `-t 90d` | Past quarter | Seasonal analysis |
+| **Last year** | `-t 1y` | Past year | Annual trends |
 
 ---
 
@@ -327,5 +372,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - **Issues**: Report bugs and feature requests on GitHub
 - **Documentation**: Check this README for detailed usage
-
----

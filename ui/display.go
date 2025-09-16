@@ -6,12 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/olekukonko/tablewriter"
 	"ytminer/analysis"
 	"ytminer/utils"
 	"ytminer/youtube"
+
+	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/olekukonko/tablewriter"
 )
 
 // Colors and styles
@@ -90,14 +91,14 @@ func DisplayVideos(videos []youtube.Video) {
 	for i, video := range videos {
 		// Truncate long titles
 		title := video.Title
-		if len(title) > 50 {
-			title = title[:47] + "..."
+		if len(title) > 40 {
+			title = title[:37] + "..."
 		}
 
 		// Truncate long channel names
 		channel := video.Channel
-		if len(channel) > 20 {
-			channel = channel[:17] + "..."
+		if len(channel) > 15 {
+			channel = channel[:12] + "..."
 		}
 
 		// Format numbers
@@ -107,11 +108,8 @@ func DisplayVideos(videos []youtube.Video) {
 		// Format date
 		published := video.PublishedAt.Format("2006-01-02")
 
-		// Truncate URL
+		// Keep full URL
 		url := video.URL
-		if len(url) > 30 {
-			url = url[:27] + "..."
-		}
 
 		table.Append([]string{
 			strconv.Itoa(i + 1),
@@ -153,19 +151,17 @@ func DisplayGrowthAnalysis(growth analysis.GrowthPattern) {
 
 		for _, video := range growth.TopPerformers {
 			title := video.Title
-			if len(title) > 40 {
-				title = title[:37] + "..."
+			if len(title) > 35 {
+				title = title[:32] + "..."
 			}
 
 			channel := video.Channel
-			if len(channel) > 15 {
-				channel = channel[:12] + "..."
+			if len(channel) > 12 {
+				channel = channel[:9] + "..."
 			}
 
+			// Keep full URL
 			url := video.URL
-			if len(url) > 25 {
-				url = url[:22] + "..."
-			}
 
 			table.Append([]string{
 				title,
@@ -549,9 +545,7 @@ func DisplayMarkdown(content string) {
 
 func formatDuration(duration string) string {
 	// Parse ISO 8601 duration (PT4M13S)
-	if strings.HasPrefix(duration, "PT") {
-		duration = duration[2:]
-	}
+	duration = strings.TrimPrefix(duration, "PT")
 	
 	// Simple parsing for common formats
 	if strings.Contains(duration, "H") {

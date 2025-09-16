@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"ytminer/analysis"
 	"ytminer/config"
@@ -30,10 +31,11 @@ func main() {
 	// Parse command line flags
 	var (
 		keyword     = flag.String("k", "", "Search keyword")
-		maxResults  = flag.Int("n", appConfig.MaxResults, "Maximum number of results")
 		region      = flag.String("r", appConfig.DefaultRegion, "Search region (any, BR, US, GB)")
 		duration    = flag.String("d", appConfig.DefaultDuration, "Video duration (any, short, medium, long)")
 		analysis    = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
+		level       = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
+		timeRange   = flag.String("t", "any", "Time range (any, 7d, 30d, 90d, 1y)")
 		help        = flag.Bool("help", false, "Show help")
 		version     = flag.Bool("version", false, "Show version")
 	)
@@ -56,7 +58,7 @@ func main() {
 
 	// If keyword is provided, run in CLI mode
 	if *keyword != "" {
-		runCLIMode(*keyword, *maxResults, *region, *duration, *analysis)
+		runCLIMode(*keyword, *region, *duration, *analysis, *level, *timeRange)
 		return
 	}
 
@@ -73,17 +75,30 @@ func showHelp() {
 	fmt.Println()
 	fmt.Println("OPTIONS:")
 	fmt.Println("  -k string    Search keyword (required for CLI mode)")
-	fmt.Println("  -n int       Maximum number of results (default: 25)")
 	fmt.Println("  -r string    Search region: any, BR, US, GB (default: any)")
 	fmt.Println("  -d string    Video duration: any, short, medium, long (default: any)")
 	fmt.Println("  -a string    Analysis type: growth, titles, competitors, temporal, keywords, executive, all")
+	fmt.Println("  -l string    Analysis level: quick, balanced, deep (default: balanced)")
+	fmt.Println("  -t string    Time range: any, 7d, 30d, 90d, 1y (default: any)")
 	fmt.Println("  -help        Show this help message")
 	fmt.Println("  -version     Show version information")
 	fmt.Println()
+	fmt.Println("ANALYSIS LEVELS:")
+	fmt.Println("  quick        Fast analysis (~200 units, 50 videos, 30-60s)")
+	fmt.Println("  balanced     Balanced analysis (~1000 units, 200 videos, 2-3min)")
+	fmt.Println("  deep         Deep analysis (~3000 units, 600 videos, 5-8min)")
+	fmt.Println()
+	fmt.Println("TIME RANGES:")
+	fmt.Println("  any          No time filter (all videos)")
+	fmt.Println("  7d           Last 7 days")
+	fmt.Println("  30d          Last 30 days")
+	fmt.Println("  90d          Last 90 days")
+	fmt.Println("  1y           Last year")
+	fmt.Println()
 	fmt.Println("EXAMPLES:")
-	fmt.Println("  ytminer -k \"Python tutorial\" -n 50")
-	fmt.Println("  ytminer -k \"Pokemon\" -r BR -d short -a growth")
-	fmt.Println("  ytminer -k \"Machine Learning\" -a all")
+	fmt.Println("  ytminer -k \"Python tutorial\" -l quick -t 7d")
+	fmt.Println("  ytminer -k \"Pokemon\" -r BR -d short -a growth -l balanced -t 30d")
+	fmt.Println("  ytminer -k \"Machine Learning\" -a all -l deep -t 90d")
 	fmt.Println()
 	fmt.Println("INTERACTIVE MODE:")
 	fmt.Println("  ytminer")
@@ -91,26 +106,36 @@ func showHelp() {
 	fmt.Println()
 }
 
-func runCLIMode(keyword string, maxResults int, region, duration, analysis string) {
+func runCLIMode(keyword string, region, duration, analysis, level, timeRange string) {
 	// Create YouTube client
 	client, err := utils.CreateYouTubeClient()
 	if err != nil {
 		return
 	}
 
+	// Parse analysis level
+	analysisLevel := parseAnalysisLevel(level)
+	
+	// Parse time range
+	publishedAfter, publishedBefore := parseTimeRange(timeRange)
+	
 	// Search videos with loading
-	fmt.Printf("Searching for: %s\n", keyword)
+	fmt.Printf("Searching for: %s (Level: %s, Time: %s)\n", keyword, level, timeRange)
 	
 	searchOpts := youtube.SearchOptions{
-		Query:      keyword,
-		MaxResults: int64(maxResults),
-		Region:     region,
-		Duration:   duration,
-		Order:      "relevance",
+		Query:           keyword,
+		MaxResults:      50, // Fixed at 50 per search (controlled by level)
+		Region:          region,
+		Duration:        duration,
+		Order:           "relevance",
+		Level:           analysisLevel,
+		PublishedAfter:  publishedAfter,
+		PublishedBefore: publishedBefore,
 	}
 
 	// Show loading while searching
-	stopLoading := utils.ShowLoading("🔍 Searching YouTube videos...")
+	loadingMessage := getLoadingMessage(analysisLevel)
+	stopLoading := utils.ShowLoading(loadingMessage)
 	
 	videos, err := client.SearchVideos(searchOpts)
 	stopLoading()
@@ -172,9 +197,10 @@ func showMainMenu() {
 
 func showSearchForm() {
 	var keyword string
-	var maxResults string
 	var region string
 	var duration string
+	var level string
+	var timeRange string
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -183,12 +209,6 @@ func showSearchForm() {
 				Description("What would you like to search for?").
 				Placeholder("e.g., Python tutorial").
 				Value(&keyword),
-
-			huh.NewInput().
-				Title("📊 Max Results").
-				Description("How many videos to analyze?").
-				Placeholder("25").
-				Value(&maxResults),
 
 			huh.NewSelect[string]().
 				Title("🌍 Region").
@@ -211,6 +231,28 @@ func showSearchForm() {
 					huh.NewOption("Long (> 20min)", "long"),
 				).
 				Value(&duration),
+
+			huh.NewSelect[string]().
+				Title("📅 Time Range").
+				Description("When were the videos published?").
+				Options(
+					huh.NewOption("Any time", "any"),
+					huh.NewOption("Last 7 days", "7d"),
+					huh.NewOption("Last 30 days", "30d"),
+					huh.NewOption("Last 90 days", "90d"),
+					huh.NewOption("Last year", "1y"),
+				).
+				Value(&timeRange),
+
+			huh.NewSelect[string]().
+				Title("📊 Analysis Level").
+				Description("Choose analysis depth").
+				Options(
+					huh.NewOption("🔍 Quick Scan (~200 units, 50 videos)", "quick"),
+					huh.NewOption("⚖️ Balanced (~1000 units, 200 videos)", "balanced"),
+					huh.NewOption("🚀 Deep Dive (~3000 units, 600 videos)", "deep"),
+				).
+				Value(&level),
 		),
 	)
 
@@ -218,11 +260,11 @@ func showSearchForm() {
 		log.Fatal(err)
 	}
 
-	// Convert maxResults to int
-	maxResultsInt, err := strconv.ParseInt(maxResults, 10, 64)
-	if err != nil {
-		maxResultsInt = 25
-	}
+	// Parse analysis level
+	analysisLevel := parseAnalysisLevel(level)
+	
+	// Parse time range
+	publishedAfter, publishedBefore := parseTimeRange(timeRange)
 
 	// Create YouTube client
 	client, err := utils.CreateYouTubeClient()
@@ -232,18 +274,22 @@ func showSearchForm() {
 	}
 
 	// Search videos with loading
-	ui.DisplayInfo("🔍 Searching for: " + keyword)
+	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ")")
 	
 	searchOpts := youtube.SearchOptions{
-		Query:      keyword,
-		MaxResults: maxResultsInt,
-		Region:     region,
-		Duration:   duration,
-		Order:      "relevance",
+		Query:           keyword,
+		MaxResults:      50, // Fixed at 50 per search (controlled by level)
+		Region:          region,
+		Duration:        duration,
+		Order:           "relevance",
+		Level:           analysisLevel,
+		PublishedAfter:  publishedAfter,
+		PublishedBefore: publishedBefore,
 	}
 
 	// Show loading while searching
-	stopLoading := utils.ShowLoading("🔍 Searching YouTube videos...")
+	loadingMessage := getLoadingMessage(analysisLevel)
+	stopLoading := utils.ShowLoading(loadingMessage)
 	
 	videos, err := client.SearchVideos(searchOpts)
 	stopLoading()
@@ -282,6 +328,8 @@ func showSearchForm() {
 func showAnalysisForm() {
 	var analysisType string
 	var keyword string
+	var level string
+	var timeRange string
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -302,12 +350,40 @@ func showAnalysisForm() {
 					huh.NewOption("📋 Basic Analysis", "basic"),
 				).
 				Value(&analysisType),
+
+			huh.NewSelect[string]().
+				Title("📅 Time Range").
+				Description("When were the videos published?").
+				Options(
+					huh.NewOption("Any time", "any"),
+					huh.NewOption("Last 7 days", "7d"),
+					huh.NewOption("Last 30 days", "30d"),
+					huh.NewOption("Last 90 days", "90d"),
+					huh.NewOption("Last year", "1y"),
+				).
+				Value(&timeRange),
+
+			huh.NewSelect[string]().
+				Title("📊 Analysis Level").
+				Description("Choose analysis depth").
+				Options(
+					huh.NewOption("🔍 Quick Scan (~200 units, 50 videos)", "quick"),
+					huh.NewOption("⚖️ Balanced (~1000 units, 200 videos)", "balanced"),
+					huh.NewOption("🚀 Deep Dive (~3000 units, 600 videos)", "deep"),
+				).
+				Value(&level),
 		),
 	)
 
 	if err := form.Run(); err != nil {
 		log.Fatal(err)
 	}
+
+	// Parse analysis level
+	analysisLevel := parseAnalysisLevel(level)
+	
+	// Parse time range
+	publishedAfter, publishedBefore := parseTimeRange(timeRange)
 
 	// Create YouTube client
 	client, err := utils.CreateYouTubeClient()
@@ -317,18 +393,22 @@ func showAnalysisForm() {
 	}
 
 	// Search videos with loading
-	ui.DisplayInfo("🔍 Searching for: " + keyword)
+	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ")")
 	
 	searchOpts := youtube.SearchOptions{
-		Query:      keyword,
-		MaxResults: 25,
-		Region:     "any",
-		Duration:   "any",
-		Order:      "relevance",
+		Query:           keyword,
+		MaxResults:      50, // Fixed at 50 per search (controlled by level)
+		Region:          "any",
+		Duration:        "any",
+		Order:           "relevance",
+		Level:           analysisLevel,
+		PublishedAfter:  publishedAfter,
+		PublishedBefore: publishedBefore,
 	}
 
 	// Show loading while searching
-	stopLoading := utils.ShowLoading("🔍 Searching YouTube videos...")
+	loadingMessage := getLoadingMessage(analysisLevel)
+	stopLoading := utils.ShowLoading(loadingMessage)
 	
 	videos, err := client.SearchVideos(searchOpts)
 	stopLoading()
@@ -537,5 +617,53 @@ func showSettingsForm() {
 
 	// Return to main menu
 	showMainMenu()
+}
+
+// Helper functions for analysis levels
+func parseAnalysisLevel(level string) youtube.AnalysisLevel {
+	switch level {
+	case "quick":
+		return youtube.QuickScan
+	case "balanced":
+		return youtube.Balanced
+	case "deep":
+		return youtube.DeepDive
+	default:
+		return youtube.Balanced
+	}
+}
+
+func getLoadingMessage(level youtube.AnalysisLevel) string {
+	switch level {
+	case youtube.QuickScan:
+		return "🔍 Quick scan - searching YouTube videos..."
+	case youtube.Balanced:
+		return "⚖️ Balanced analysis - searching multiple sources..."
+	case youtube.DeepDive:
+		return "🚀 Deep dive analysis - comprehensive search..."
+	default:
+		return "🔍 Searching YouTube videos..."
+	}
+}
+
+func parseTimeRange(timeRange string) (string, string) {
+	now := time.Now()
+	
+	switch timeRange {
+	case "7d":
+		sevenDaysAgo := now.AddDate(0, 0, -7)
+		return sevenDaysAgo.Format(time.RFC3339), ""
+	case "30d":
+		thirtyDaysAgo := now.AddDate(0, 0, -30)
+		return thirtyDaysAgo.Format(time.RFC3339), ""
+	case "90d":
+		ninetyDaysAgo := now.AddDate(0, 0, -90)
+		return ninetyDaysAgo.Format(time.RFC3339), ""
+	case "1y":
+		oneYearAgo := now.AddDate(-1, 0, 0)
+		return oneYearAgo.Format(time.RFC3339), ""
+	default:
+		return "", ""
+	}
 }
 
