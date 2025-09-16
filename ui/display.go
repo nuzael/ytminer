@@ -16,13 +16,13 @@ import (
 
 // Colors and styles
 var (
-	primaryColor   = lipgloss.Color("#FF6B6B")
-	secondaryColor = lipgloss.Color("#4ECDC4")
-	accentColor    = lipgloss.Color("#45B7D1")
-	textColor      = lipgloss.Color("#2C3E50")
-	successColor   = lipgloss.Color("#27AE60")
-	warningColor   = lipgloss.Color("#F39C12")
-	errorColor     = lipgloss.Color("#E74C3C")
+	primaryColor   = lipgloss.Color("#FF6B6B") // Red
+	secondaryColor = lipgloss.Color("#4ECDC4") // Cyan
+	accentColor    = lipgloss.Color("#45B7D1") // Blue
+	textColor      = lipgloss.Color("#FFFFFF") // Orange
+	successColor   = lipgloss.Color("#27AE60") // Green
+	warningColor   = lipgloss.Color("#F39C12") // Yellow
+	errorColor     = lipgloss.Color("#E74C3C") // Red
 )
 
 var (
@@ -39,8 +39,7 @@ var (
 			Align(lipgloss.Center)
 
 	infoStyle = lipgloss.NewStyle().
-			Foreground(textColor).
-			Margin(1, 0)
+			Foreground(textColor)
 
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor).
@@ -56,8 +55,7 @@ var (
 
 	headerStyle = lipgloss.NewStyle().
 			Foreground(accentColor).
-			Bold(true).
-			Margin(1, 0)
+			Bold(true)
 
 	sectionStyle = lipgloss.NewStyle().
 			Foreground(primaryColor).

@@ -121,7 +121,7 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange str
 	publishedAfter, publishedBefore := parseTimeRange(timeRange)
 	
 	// Search videos with loading
-	fmt.Printf("Searching for: %s (Level: %s, Time: %s)\n", keyword, level, timeRange)
+	fmt.Printf("Searching for: %s (Level: %s, Time: %s, Region: %s, Duration: %s)\n", keyword, level, timeRange, region, duration)
 	
 	scrollOpts := youtube.SearchOptions{
 		Query:           keyword,
@@ -285,7 +285,7 @@ func showSearchForm() {
 	}
 
 	// Search videos with loading
-	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ")")
+	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ", Region: " + region + ", Duration: " + duration + ")")
 	
 	searchOpts := youtube.SearchOptions{
 		Query:           keyword,
@@ -333,120 +333,6 @@ func showSearchForm() {
 	}
 
 	// No preview: run analysis directly (type will be asked inside runAnalysis)
-	runAnalysis(videos, "")
-}
-
-func showAnalysisForm() {
-	var analysisType string
-	var keyword string
-	var level string
-	var timeRange string
-
-	// Step 1: keyword
-	kwForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("🔍 Keyword").
-				Description("What topic to analyze?").
-				Placeholder("e.g., Python tutorial").
-				Value(&keyword),
-		),
-	)
-	if err := kwForm.Run(); err != nil { log.Fatal(err) }
-
-	// Step 2: analysis type
-	typeForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("📊 Analysis Type").
-				Description("Choose the type of analysis").
-				Options(
-					huh.NewOption("🎯 Creator Analysis", "creator"),
-					huh.NewOption("📈 Marketing Analysis", "marketing"),
-					huh.NewOption("🔬 Research Analysis", "research"),
-					huh.NewOption("💼 Executive Report", "executive"),
-					huh.NewOption("📋 Basic Analysis", "basic"),
-				).
-				Value(&analysisType),
-		),
-	)
-	if err := typeForm.Run(); err != nil { log.Fatal(err) }
-
-	// Step 3: time range
-	timeForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("📅 Time Range").
-				Description("When were the videos published?").
-				Options(
-					huh.NewOption("Any time", "any"),
-					huh.NewOption("Last 7 days", "7d"),
-					huh.NewOption("Last 30 days", "30d"),
-					huh.NewOption("Last 90 days", "90d"),
-					huh.NewOption("Last year", "1y"),
-				).
-				Value(&timeRange),
-		),
-	)
-	if err := timeForm.Run(); err != nil { log.Fatal(err) }
-
-	// Step 4: level
-	levelForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[string]().
-				Title("📊 Analysis Level").
-				Description("Choose analysis depth").
-				Options(
-					huh.NewOption("🔍 Quick Scan (~200 units, 50 videos)", "quick"),
-					huh.NewOption("⚖️ Balanced (~1000 units, 200 videos)", "balanced"),
-					huh.NewOption("🚀 Deep Dive (~3000 units, 600 videos)", "deep"),
-				).
-				Value(&level),
-		),
-	)
-	if err := levelForm.Run(); err != nil { log.Fatal(err) }
-
-	// Parse analysis level
-	analysisLevel := parseAnalysisLevel(level)
-	
-	// Parse time range
-	publishedAfter, publishedBefore := parseTimeRange(timeRange)
-
-	// Create YouTube client
-	client, err := utils.CreateYouTubeClient()
-	if err != nil {
-		showMainMenu()
-		return
-	}
-
-	// Search videos with loading
-	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ")")
-	
-	searchOpts := youtube.SearchOptions{
-		Query:           keyword,
-		MaxResults:      50, // Fixed at 50 per search (controlled by level)
-		Region:          "any",
-		Duration:        "any",
-		Order:           "relevance",
-		Level:           analysisLevel,
-		PublishedAfter:  publishedAfter,
-		PublishedBefore: publishedBefore,
-	}
-
-	// Show loading while searching
-	loadingMessage := getLoadingMessage(analysisLevel)
-	stopLoading := utils.ShowLoading(loadingMessage)
-	
-	videos, err := client.SearchVideos(searchOpts)
-	stopLoading()
-	
-	if err != nil {
-		utils.HandleError(err, "Failed to search videos")
-		showMainMenu()
-		return
-	}
-
-	// Run analysis
 	runAnalysis(videos, "")
 }
 
@@ -672,14 +558,8 @@ func parseAnalysisLevel(level string) youtube.AnalysisLevel {
 
 func getLoadingMessage(level youtube.AnalysisLevel) string {
 	switch level {
-	case youtube.QuickScan:
-		return "🔍 Quick scan - searching YouTube videos..."
-	case youtube.Balanced:
-		return "⚖️ Balanced analysis - searching multiple sources..."
-	case youtube.DeepDive:
-		return "🚀 Deep dive analysis - comprehensive search..."
 	default:
-		return "🔍 Searching YouTube videos..."
+		return "Searching..."
 	}
 }
 

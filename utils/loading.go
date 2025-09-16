@@ -4,47 +4,63 @@ import (
 	"fmt"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// ShowLoading displays a simple loading animation with the given message
+// tea model for spinner
+type spinnerModel struct {
+	sp      spinner.Model
+	message string
+	stopped bool
+}
+
+func (m spinnerModel) Init() tea.Cmd { return spinner.Tick }
+
+func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg.(type) {
+	case tea.KeyMsg:
+		return m, nil
+	case tea.WindowSizeMsg:
+		return m, nil
+	}
+	var cmd tea.Cmd
+	m.sp, cmd = m.sp.Update(msg)
+	if m.stopped {
+		return m, tea.Quit
+	}
+	return m, cmd
+}
+
+func (m spinnerModel) View() string {
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4")).Margin(1, 0)
+	return style.Render(fmt.Sprintf("%s %s", m.sp.View(), m.message))
+}
+
+// ShowLoading displays a Bubble Tea spinner with the given message and returns a stop func
 func ShowLoading(message string) func() {
-	style := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#4ECDC4")).
-		Margin(1, 0)
-	
-	// Show loading message
-	fmt.Printf("\n%s\n", style.Render(message))
-	
-	// Create animation frames
-	frames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
-	
-	// Start animation in goroutine
-	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			default:
-				for _, frame := range frames {
-					fmt.Printf("\r%s %s", frame, message)
-					time.Sleep(100 * time.Millisecond)
-					select {
-					case <-done:
-						return
-					default:
-					}
-				}
-			}
-		}
-	}()
-	
+	sp := spinner.New()
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#4ECDC4"))
+	sp.Spinner = spinner.Line
+
+	model := spinnerModel{sp: sp, message: message}
+	p := tea.NewProgram(model, tea.WithoutCatchPanics())
+
+	// run program in background and signal when it exits
+	done := make(chan struct{})
+	go func() { _ = p.Start(); close(done) }()
+
 	// Return function to stop loading
 	return func() {
-		done <- true
-		fmt.Printf("\r%s %s\n", 
-			lipgloss.NewStyle().Foreground(lipgloss.Color("#27AE60")).Render("✅"), 
-			lipgloss.NewStyle().Bold(true).Render("Complete!"))
+		// Ask program to quit gracefully
+		p.Quit()
+		// Wait for exit with a timeout; if it hangs, kill
+		select {
+		case <-done:
+			// ok
+		case <-time.After(500 * time.Millisecond):
+			p.Kill()
+		}
 	}
 }
