@@ -159,20 +159,20 @@ The easiest way to use YTMiner is through interactive mode. Simply run:
 ### What happens in interactive mode:
 
 1. **Topic Selection**: Enter the keyword you want to analyze
-2. **Analysis Level**: Choose analysis depth (quick, balanced, deep)
-3. **Analysis Selection**: Choose specific analyses or run all
-4. **Filters**: Optionally set region and duration filters
-5. **Results**: Get a comprehensive analysis with actionable insights
+2. **Filters**: Choose Region, Duration, Time Range, and Analysis Level
+3. **Preview Choice**: Decide if you want to preview the results before analysis
+4. **Results/Analysis**:
+   - If you chose to preview, a results table is shown and you can confirm running the analysis
+   - If you skip preview, the selected analysis runs immediately after the search
 
 ### Example Interactive Session:
 ```
 Welcome to YTMiner!
 
-1. What topic would you like to analyze? → "Pokemon"
-2. Choose analysis level → Balanced (~200 videos)
-3. Choose analysis type → All Analyses
-4. Any specific filters? → Brazil region, any duration
-5. Analysis runs automatically with results!
+1. Enter keyword → "Pokemon"
+2. Choose filters → Region: BR, Duration: any, Time Range: 30d, Level: balanced
+3. Preview results before analysis? → Yes
+4. Table is shown → Confirm to run analysis
 ```
 
 ---
@@ -198,6 +198,15 @@ Welcome to YTMiner!
 .\ytminer.exe -k "fitness" -l deep -a all
 # Linux/Mac
 ./ytminer.exe -k "fitness" -l deep -a all
+```
+
+### Go straight to analysis (skip preview)
+```bash
+# Skip preview; you'll be prompted for the analysis type interactively
+.\ytminer.exe -k "python tutorial" -l quick --no-preview
+
+# Skip preview and specify analysis type
+.\ytminer.exe -k "python tutorial" -l balanced -a growth --no-preview
 ```
 
 ### Digital Marketers
@@ -255,6 +264,7 @@ Welcome to YTMiner!
 | `-a, --analysis` | Analysis type | `-a growth` |
 | `-l, --level` | Analysis level (quick, balanced, deep) | `-l balanced` |
 | `-t, --time` | Time range (any, 7d, 30d, 90d, 1y) | `-t 30d` |
+| `--no-preview` | Skip preview and run analysis directly | `--no-preview` |
 | `--help` | Show help message | `--help` |
 | `--version` | Show version information | `--version` |
 

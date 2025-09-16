@@ -35,6 +35,7 @@ func main() {
 		analysis    = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
 		level       = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
 		timeRange   = flag.String("t", "any", "Time range (any, 7d, 30d, 90d, 1y)")
+		noPreview   = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
 		help        = flag.Bool("help", false, "Show help")
 		version     = flag.Bool("version", false, "Show version")
 	)
@@ -57,7 +58,7 @@ func main() {
 
 	// If keyword is provided, run in CLI mode
 	if *keyword != "" {
-		runCLIMode(*keyword, *region, *duration, *analysis, *level, *timeRange)
+		runCLIMode(*keyword, *region, *duration, *analysis, *level, *timeRange, *noPreview)
 		return
 	}
 
@@ -79,8 +80,9 @@ func showHelp() {
 	fmt.Println("  -a string    Analysis type: growth, titles, competitors, temporal, keywords, executive, all")
 	fmt.Println("  -l string    Analysis level: quick, balanced, deep (default: balanced)")
 	fmt.Println("  -t string    Time range: any, 7d, 30d, 90d, 1y (default: any)")
-	fmt.Println("  -help        Show this help message")
-	fmt.Println("  -version     Show version information")
+	fmt.Println("  --no-preview Skip preview table and run analysis directly")
+	fmt.Println("  --help       Show help")
+	fmt.Println("  --version    Show version")
 	fmt.Println()
 	fmt.Println("ANALYSIS LEVELS:")
 	fmt.Println("  quick        Fast analysis (~200 units, 50 videos, 30-60s)")
@@ -105,7 +107,7 @@ func showHelp() {
 	fmt.Println()
 }
 
-func runCLIMode(keyword string, region, duration, analysis, level, timeRange string) {
+func runCLIMode(keyword string, region, duration, analysis, level, timeRange string, noPreview bool) {
 	// Create YouTube client
 	client, err := utils.CreateYouTubeClient()
 	if err != nil {
@@ -121,7 +123,7 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange str
 	// Search videos with loading
 	fmt.Printf("Searching for: %s (Level: %s, Time: %s)\n", keyword, level, timeRange)
 	
-	searchOpts := youtube.SearchOptions{
+	scrollOpts := youtube.SearchOptions{
 		Query:           keyword,
 		MaxResults:      50, // Fixed at 50 per search (controlled by level)
 		Region:          region,
@@ -136,7 +138,7 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange str
 	loadingMessage := getLoadingMessage(analysisLevel)
 	stopLoading := utils.ShowLoading(loadingMessage)
 	
-	videos, err := client.SearchVideos(searchOpts)
+	videos, err := client.SearchVideos(scrollOpts)
 	stopLoading()
 	
 	if err != nil {
@@ -144,15 +146,17 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange str
 		return
 	}
 
-	fmt.Printf("Found %d videos!\n\n", len(videos))
-
-	// Display results
-	ui.DisplayVideos(videos)
-
-	// If analysis is specified, run it
-	if analysis != "" {
+	// CLI behavior: optionally preview, then analyze
+	if analysis != "" || noPreview {
+		if !noPreview {
+			ui.DisplayVideos(videos)
+		}
 		runAnalysis(videos, analysis)
+		return
 	}
+
+	// Default: just preview results; user can decide next steps interactivos
+	ui.DisplayVideos(videos)
 }
 
 
@@ -169,7 +173,6 @@ func showMainMenu() {
 				Description("Choose an option to get started").
 				Options(
 					huh.NewOption("🔍 Search Videos", "search"),
-					huh.NewOption("📊 Run Analysis", "analysis"),
 					huh.NewOption("⚙️ Settings", "settings"),
 					huh.NewOption("❌ Exit", "exit"),
 				).
@@ -184,8 +187,6 @@ func showMainMenu() {
 	switch choice {
 	case "search":
 		showSearchForm()
-	case "analysis":
-		showAnalysisForm()
 	case "settings":
 		showSettingsForm()
 	case "exit":
@@ -200,6 +201,7 @@ func showSearchForm() {
 	var duration string
 	var level string
 	var timeRange string
+	var previewBefore bool
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -257,6 +259,12 @@ func showSearchForm() {
 				).
 				Value(&level),
 		),
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("👀 Preview results before analysis?").
+				Description("If No, we'll run the analysis directly after the search").
+				Value(&previewBefore),
+		),
 	)
 
 	if err := form.Run(); err != nil {
@@ -303,29 +311,29 @@ func showSearchForm() {
 		return
 	}
 
-	// Display results
-	ui.DisplayVideos(videos)
-
-	// Ask if user wants to analyze
-	var analyze bool
-	analyzeForm := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("📊 Run Analysis?").
-				Description("Would you like to analyze these videos?").
-				Value(&analyze),
-		),
-	)
-
-	if err := analyzeForm.Run(); err != nil {
-		log.Fatal(err)
+	if previewBefore {
+		// Show preview then ask to run analysis
+		ui.DisplayVideos(videos)
+		var analyze bool
+		analyzeForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("📊 Run Analysis?").
+					Description("Would you like to analyze these videos?").
+					Value(&analyze),
+			),
+		)
+		if err := analyzeForm.Run(); err != nil { log.Fatal(err) }
+		if analyze {
+			runAnalysis(videos, "")
+		} else {
+			showMainMenu()
+		}
+		return
 	}
 
-	if analyze {
-		runAnalysis(videos, "")
-	} else {
-		showMainMenu()
-	}
+	// No preview: run analysis directly (type will be asked inside runAnalysis)
+	runAnalysis(videos, "")
 }
 
 func showAnalysisForm() {
