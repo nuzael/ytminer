@@ -1,80 +1,56 @@
 # YTMiner Metrics and Methodology
 
-This document explains how YTMiner computes each analysis and what parameters influence the results. Our goal is to provide transparency so users understand where insights come from and what sample sizes were used.
+This document explains how YTMiner computes each analysis. Our methodology is centered around **View Velocity** to provide insights into current momentum, not just historical popularity.
 
 ## Global Inputs and Filters
-- Keyword: the search topic used to retrieve videos.
-- Region: ISO2 country code or `any`.
-- Duration: `short` (<4m), `medium` (4–20m), `long` (>20m), or `any`.
-- Time Range: `any`, `7d`, `30d`, `90d`, `1y`.
-- Order: `relevance` (default), `date`, `viewCount`, `rating`, `title`.
-- Analysis Level: controls breadth/depth (number of searches/videos sampled).
-
-All analyses operate on the same filtered set of videos retrieved from the YouTube Data API v3 using the parameters above. Each report header shows the parameters and the total sample size (N videos).
-
-Sampling note: for Balanced/Deep Dive levels, the first search honors the user-selected `order/region/duration`, then additional searches introduce diversity (e.g., different orders/regions/durations) while deduplicating videos.
+- Keyword, Region, Duration, Time Range, Order, Analysis Level.
+- All analyses operate on the same filtered set of videos. The report header shows the parameters and the total sample size (N videos).
 
 ## Data Cleaning and Normalization
-- Unicode normalization (NFKC-like) with accent removal before tokenization.
-- Tokenization removes punctuation/symbols and collapses whitespace.
-- Stopwords: small bilingual list (English and Portuguese) to remove common function words.
-- Emoji extraction: Unicode grapheme cluster aware (ZWJ sequences, flags), not just non-ASCII characters.
-- Outlier protection: engagement calculations guard against division-by-zero.
+- Unicode normalization, tokenization, stopword removal, and emoji extraction are performed on titles.
+
+## Core Analytical Metric: View Velocity (VPD)
+The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total views by the video's age, allowing us to compare the momentum of new and older videos on a level playing field.
+
+- **VPD** = `video.viewCount / max(1, days_since_publication)`
+- `days_since_publication` is the integer number of days from the video's publication date to today.
+- This metric is calculated for every video in the sample and used as a basis for most analyses.
 
 ## Growth Pattern Analysis
-- Metrics per video:
-  - Engagement% = (likes + comments) / max(views, 1) × 100.
-- Aggregation across videos (N):
-  - Avg Views = sum(views)/N
-  - Avg Likes = sum(likes)/N
-  - Avg Comments = sum(comments)/N
-- Top Performers: ranked by per-video Engagement%, top 5.
-- Growth Trend (rate): simple linear regression slope of views vs. publish order (time proxy), expressed as % of the first video’s views: slope / firstViews × 100.
-  - Interpretation: positive = upward trend; negative = downward.
+- **Niche Velocity Score (Avg. VPD)**: The primary health indicator of a niche.
+  - `Avg. VPD = sum(all_video_VPDs) / N`
+- **Highest Velocity Videos (Trending Now)**: Ranked by **VPD** descending, not by total views or engagement. Highlights what's trending *now*.
+- Standard aggregations (Avg Views, Likes, Comments) are still provided for context.
+- The previous "Growth Trend" (linear regression) has been deprecated in favor of the more robust Avg. VPD.
 
 ## Title Pattern Analysis
-- Words: tokenized from normalized titles, stopwords removed; ranked by frequency (top 10).
-- Phrases: bigrams from tokenized words; ranked by frequency (top 5).
-- Emojis: extracted via grapheme clusters; ranked by frequency (top 5).
-- Patterns: simple rule matches (e.g., contains "tutorial", "how to", year markers like 2023/2024).
+- Methodology remains the same: word/phrase frequency, emoji counts, and pattern matching. This analysis is independent of velocity.
 
 ## Competitor Analysis
-- For each channel within the sample:
-  - VideoCount, TotalViews, AvgViews, Engagement% (avg of per-video engagement).
-- Ranking by TotalViews; top channels displayed.
-- Market Share: channel.TotalViews / sum(all channels’ views) × 100 within the sampled set.
-- Note: The same global filters apply (time range, region, duration, order). Interpret as sample-level market share, not global.
+- For each channel in the sample, we calculate both traditional and velocity-based metrics:
+  - Traditional: VideoCount, TotalViews, AvgViews, Market Share %.
+  - **Velocity Metrics**:
+    - **Channel Average VPD**: The mean VPD of all videos from a specific channel in the sample. Measures the channel's current "hotness".
+- **Rising Stars**: New category to identify emerging competitors. A channel is flagged as "Rising Star" if its `Channel Average VPD` is significantly higher than the overall `Niche Average VPD` (e.g., > 1.5x).
+- Ranking: The main competitor list is ranked by `TotalViews` to show established leaders, but the report highlights channels with highest `Channel Average VPD` and identified "Rising Stars".
 
 ## Temporal Analysis
-- For each hour (0–23) and weekday:
-  - Sum views, likes, and engagement across matching videos; track counts.
-  - Compute averages per bucket: AvgViews, AvgLikes, Engagement%.
-- Minimum sample size per bucket: N ≥ 5 (buckets below threshold are hidden).
-- Rankings: by Engagement% descending.
+- Methodology remains the same: aggregates views and engagement by hour and day of the week. This analysis is independent of velocity.
 
 ## Keyword Analysis
-- Tokenized keywords from titles (normalized, stopwords removed).
-- For each keyword:
-  - Frequency = count of videos where keyword appears.
-  - AvgViews = mean of views across those videos.
-  - Engagement% = mean of per-video engagement across those videos.
-- Trending Keywords: top by Frequency (top 10).
-- Long-tail Candidates: Frequency < 3 and Engagement% > 5%; sorted by Engagement%.
+- **Trending Keywords (redefined)**: This analysis now identifies keywords driving the most momentum.
+  - For each keyword (token), we calculate the **Average VPD** of all videos in the sample containing that keyword.
+  - Keywords are ranked by this `Average VPD` to reveal which specific topics are currently "hot" and generating high-velocity views.
+- **Core Keywords**: The previous frequency-based ranking is available as "Core Keywords", identifying the most common terms in the niche.
+- **Long-tail Candidates**: The definition remains: low frequency but high `Engagement%`.
+
+## Engagement Analysis
+- **Engagement Rate**: `(Likes + Comments) / max(1, Views) * 100`
+- Channel engagement is calculated as the average engagement across all videos from that channel in the sample.
+- Engagement formatting adjusts precision based on value range for better readability.
+- Engagement categories: Excellent (>10%), Very Good (5-10%), Good (2-5%), Average (1-2%), Low (<1%).
 
 ## Executive Report
-- Synthesizes insights from all analyses, summarizing:
-  - Key Insights, Recommendations, Content Strategy, Competitive Intel, Performance Benchmarks, Next Steps.
-- Each section is derived from the metrics described above and the current sample.
-
-## Sample Size Reporting
-- Each analysis prints N = number of videos considered.
-- Temporal buckets also imply per-bucket N with a minimum threshold; consider increasing the Analysis Level and time window to improve per-bucket coverage.
-
-## Limitations
-- API quota and sampling strategy may bias results; consider higher "Analysis Level" for broader coverage.
-- Growth slope uses publish order as a time proxy; for precise time series, a full time-bucketed trend should be computed.
-- Keyword stopword lists are minimal; specialized domains may require custom lists.
-
-## Reproducibility
-- The CLI and interactive flows document the filters used (including `order`) at the top of each report or preview.
-- Results depend on current YouTube search results and may vary over time. 
+- Synthesizes insights from all analyses, with strong emphasis on velocity and momentum.
+- Highlights the `Niche Velocity Score`, identifies "Breakout" topics from Keyword Analysis, and flags "Rising Star" competitors.
+- Includes direct links to Rising Star channels for immediate competitive analysis.

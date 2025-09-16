@@ -131,16 +131,16 @@ func DisplayGrowthAnalysis(growth analysis.GrowthPattern) {
 	fmt.Println(infoStyle.Render(fmt.Sprintf("Total Videos (N=%d)", growth.TotalVideos)))
 	fmt.Println(infoStyle.Render(fmt.Sprintf("Average Views: %s", utils.FormatNumber(growth.AvgViews))))
 	fmt.Println(infoStyle.Render(fmt.Sprintf("Average Likes: %s", utils.FormatNumber(growth.AvgLikes))))
-	fmt.Println(infoStyle.Render(fmt.Sprintf("Growth Rate: %.1f%%", growth.GrowthRate)))
+	fmt.Println(infoStyle.Render(fmt.Sprintf("🚀 Niche Velocity Score (Avg. VPD): %s", utils.FormatVPD(growth.NicheVelocityScore))))
 	fmt.Println()
 
-	// Top Performers
+	// Highest Velocity Videos (renamed from Top Performers)
 	if len(growth.TopPerformers) > 0 {
-		fmt.Println(headerStyle.Render("🏆 Top Performing Videos"))
+		fmt.Println(headerStyle.Render("⚡ Highest Velocity Videos (Trending Now)"))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Title", "Channel", "Views", "Likes", "Engagement", "URL"})
+		table.SetHeader([]string{"Title", "Channel", "Views", "VPD", "Engagement", "URL"})
 		table.SetBorder(true)
 		table.SetCenterSeparator("|")
 		table.SetColumnSeparator("|")
@@ -164,8 +164,8 @@ func DisplayGrowthAnalysis(growth analysis.GrowthPattern) {
 				title,
 				channel,
 				utils.FormatNumber(video.Views),
-				utils.FormatNumber(video.Likes),
-				fmt.Sprintf("%.2f%%", video.Engagement),
+				utils.FormatVPD(video.VPD),
+				utils.FormatEngagementRate(video.Engagement),
 				url,
 			})
 		}
@@ -254,7 +254,7 @@ func DisplayCompetitorAnalysis(competitors analysis.CompetitorAnalysis) {
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Channel", "Videos", "Total Views", "Avg Views", "Engagement"})
+		table.SetHeader([]string{"Channel", "Videos", "Total Views", "Avg Views", "Avg. VPD", "Engagement", "Channel URL"})
 		table.SetBorder(true)
 		table.SetCenterSeparator("|")
 		table.SetColumnSeparator("|")
@@ -271,12 +271,58 @@ func DisplayCompetitorAnalysis(competitors analysis.CompetitorAnalysis) {
 				strconv.Itoa(channel.VideoCount),
 				utils.FormatNumber(channel.TotalViews),
 				utils.FormatNumber(channel.AvgViews),
-				fmt.Sprintf("%.2f%%", channel.Engagement),
+				utils.FormatVPD(channel.AvgVPD),
+				utils.FormatEngagementRate(channel.Engagement),
+				channel.ChannelURL,
 			})
 		}
 
 		table.Render()
 		fmt.Println()
+	}
+
+	// Rising Stars section
+	if len(competitors.RisingStars) > 0 {
+		fmt.Println(headerStyle.Render("⭐ Rising Stars"))
+		fmt.Println()
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Channel", "Videos", "Avg. VPD", "Avg Views", "Engagement", "Channel URL"})
+		table.SetBorder(true)
+		table.SetCenterSeparator("|")
+		table.SetColumnSeparator("|")
+		table.SetRowSeparator("-")
+
+		for _, channel := range competitors.RisingStars {
+			channelName := channel.Channel
+			if len(channelName) > 20 {
+				channelName = channelName[:17] + "..."
+			}
+
+			table.Append([]string{
+				channelName,
+				strconv.Itoa(channel.VideoCount),
+				utils.FormatVPD(channel.AvgVPD),
+				utils.FormatNumber(channel.AvgViews),
+				utils.FormatEngagementRate(channel.Engagement),
+				channel.ChannelURL,
+			})
+		}
+
+		table.Render()
+		fmt.Println()
+		
+		// Detailed Rising Stars list with direct links
+		fmt.Println(headerStyle.Render("🔗 Rising Stars - Direct Links"))
+		for i, channel := range competitors.RisingStars {
+			fmt.Println(infoStyle.Render(fmt.Sprintf("%d. %s", i+1, channel.Channel)))
+			fmt.Println(infoStyle.Render(fmt.Sprintf("   🚀 VPD: %s | 📺 Videos: %d | 👁️ Avg Views: %s", 
+				utils.FormatVPD(channel.AvgVPD), 
+				channel.VideoCount, 
+				utils.FormatNumber(channel.AvgViews))))
+			fmt.Println(infoStyle.Render(fmt.Sprintf("   🔗 %s", channel.ChannelURL)))
+			fmt.Println()
+		}
 	}
 
 	// Market Share
@@ -313,7 +359,7 @@ func DisplayTemporalAnalysis(temporal analysis.TemporalAnalysis) {
 
 	// Best Hours
 	if len(temporal.BestHours) > 0 {
-		fmt.Println(headerStyle.Render("�� Best Posting Hours (N≥5 per bucket)"))
+		fmt.Println(headerStyle.Render("⏰ Best Posting Hours (N≥5 per bucket)"))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -375,14 +421,14 @@ func DisplayKeywordAnalysis(keywords analysis.KeywordAnalysis) {
 	fmt.Println(sectionStyle.Render("🔍 Keyword Analysis"))
 	fmt.Println()
 
-	// Trending Keywords
+	// Trending Keywords (now based on VPD)
 	if len(keywords.TrendingKeywords) > 0 {
-		fmt.Println(headerStyle.Render("📈 Trending Keywords"))
-		fmt.Println(infoStyle.Render(fmt.Sprintf("(N=%d videos)", len(keywords.TrendingKeywords))))
+		fmt.Println(headerStyle.Render("🚀 Trending Keywords (Breakout Topics)"))
+		fmt.Println(infoStyle.Render("(Ranked by Average VPD - velocity/momentum)"))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Keyword", "Frequency", "Avg Views", "Engagement"})
+		table.SetHeader([]string{"Keyword", "Frequency", "Avg Views", "Avg VPD", "Engagement"})
 		table.SetBorder(true)
 		table.SetCenterSeparator("|")
 		table.SetColumnSeparator("|")
@@ -393,7 +439,35 @@ func DisplayKeywordAnalysis(keywords analysis.KeywordAnalysis) {
 				keyword.Keyword,
 				strconv.Itoa(keyword.Frequency),
 				utils.FormatNumber(keyword.AvgViews),
-				fmt.Sprintf("%.2f%%", keyword.Engagement),
+				utils.FormatVPD(keyword.AvgVPD),
+				utils.FormatEngagementRate(keyword.Engagement),
+			})
+		}
+
+		table.Render()
+		fmt.Println()
+	}
+
+	// Core Keywords (frequency-based)
+	if len(keywords.CoreKeywords) > 0 {
+		fmt.Println(headerStyle.Render("📊 Core Keywords (Most Common)"))
+		fmt.Println(infoStyle.Render("(Ranked by frequency in titles)"))
+		fmt.Println()
+
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Keyword", "Frequency", "Avg Views", "Avg VPD", "Engagement"})
+		table.SetBorder(true)
+		table.SetCenterSeparator("|")
+		table.SetColumnSeparator("|")
+		table.SetRowSeparator("-")
+
+		for _, keyword := range keywords.CoreKeywords {
+			table.Append([]string{
+				keyword.Keyword,
+				strconv.Itoa(keyword.Frequency),
+				utils.FormatNumber(keyword.AvgViews),
+				utils.FormatVPD(keyword.AvgVPD),
+				utils.FormatEngagementRate(keyword.Engagement),
 			})
 		}
 

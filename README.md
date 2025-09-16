@@ -9,44 +9,41 @@ A command-line tool for YouTube content creators, marketers, and researchers to 
 ## Core Analysis Features
 
 ### Growth Pattern Analysis (`-a growth`)
-- Performance metrics and engagement rates
-- Top performers identification
-- Growth rate calculations
-- Best engagement content discovery
+- **Niche Velocity Score (Avg. VPD)**: Measures overall niche momentum based on Views Per Day.
+- **Highest Velocity Videos**: Identifies videos that are trending now, ranked by VPD.
+- Performance metrics based on velocity, not just total views.
+- Momentum analysis and viral potential detection.
 
 ### Title Pattern Analysis (`-a titles`) 
-- Winning title formulas and patterns
-- Most common words in successful videos
-- Emoji usage patterns and effectiveness
-- Title length optimization insights
-- Creator-specific recommendations
+- Winning title formulas and patterns.
+- Most common words in successful videos.
+- Emoji usage patterns and effectiveness.
+- Title length optimization insights.
 
 ### Competitor Analysis (`-a competitors`)
-- Market leaders and their strategies
-- Market concentration analysis
-- Content patterns by top channels
-- Market share distribution
-- Strategic positioning recommendations
+- **Rising Stars Detection**: Identifies emerging channels with high velocity (VPD > 1.5x niche average).
+- **Direct Channel Links**: Provides clickable YouTube channel URLs for immediate analysis.
+- Analysis of established competitors vs rising channels.
+- Velocity metrics (Avg. VPD) per channel to identify momentum.
+- Market share combined with velocity analysis.
 
 ### Temporal Analysis (`-a temporal`)
-- Optimal posting times (best hours and days)
-- Performance by hour and day of week
-- Peak engagement periods
-- Posting schedule optimization
+- Optimal posting times (best hours and days).
+- Performance by hour and day of week.
+- Peak engagement periods.
+- Posting schedule optimization.
 
 ### Keyword Analysis (`-a keywords`)
-- High-performing keywords identification
-- Long-tail keyword opportunities
-- SEO suggestions based on data
-- Trending keywords in your niche
-- Search visibility optimization
+- **Trending Keywords (Breakout Topics)**: Ranked by Avg. VPD to identify "hot" topics with momentum.
+- **Core Keywords**: Most common words based on frequency (traditional analysis).
+- Long-tail keywords with high engagement for SEO opportunities.
+- Clear separation between viral vs popular topics.
 
 ### Executive Reports (`-a executive`)
-- Comprehensive analysis with actionable insights
-- Strategic recommendations based on data
-- Content strategy planning
-- Performance benchmarks for comparison
-- Prioritized next steps with timelines
+- Comprehensive reports focusing on market velocity and momentum.
+- Strategic recommendations based on VPD metrics.
+- Identifies "Rising Stars" and breakout topics for monitoring.
+- Performance benchmarks including Niche Velocity Score.
 
 ---
 
@@ -68,20 +65,20 @@ YTMiner offers three analysis levels to optimize API usage and analysis depth:
 #### Quick Scan (~200 units, 50 videos, 30-60s)
 - **Best for**: Quick exploration, demos, trend validation
 - **Data**: Single search with 50 videos
-- **Insights**: Basic patterns and trends
-- **Use case**: "Is this topic worth analyzing further?"
+- **Insights**: Basic patterns and velocity indicators
+- **Use case**: "Is this topic hot right now?"
 
 #### Balanced (~1000 units, 200 videos, 2-3min)
 - **Best for**: Regular content creators, marketers
 - **Data**: 4 searches across different parameters
 - **Insights**: Reliable patterns and recommendations
-- **Use case**: "What should my content strategy be?"
+- **Use case**: "What is the current growth strategy in this niche?"
 
 #### Deep Dive (~3000 units, 600 videos, 5-8min)
 - **Best for**: Strategic analysis, research, business decisions
 - **Data**: 12 searches across regions, durations, and related topics
-- **Insights**: Comprehensive market intelligence
-- **Use case**: "What's the complete competitive landscape?"
+- **Insights**: Comprehensive market and competitor velocity intelligence
+- **Use case**: "What's the complete competitive landscape, including emerging players?"
 
 ### 1. Get YouTube API Key
 1. Visit [Google Cloud Console](https://console.cloud.google.com/)
@@ -235,47 +232,52 @@ For methodology details, see `docs/METRICS.md`.
 
 ### Growth Pattern Analysis
 ```
-Growth Pattern Analysis
+📈 Growth Pattern Analysis
 
-Total Videos: 25
-Average Views: 1.2M
-Average Likes: 45.2K
-Growth Rate: 15.3%
+Total Videos (N=50)
+Average Views: 250.4K
+Average Likes: 12.1K
+🚀 Niche Velocity Score (Avg. VPD): 1.9K
 
-Top Performing Videos:
-1. "Advanced Python Tutorial" - 2.5M views (3.2% engagement)
-2. "Python for Beginners" - 1.8M views (2.8% engagement)
-3. "Python Data Science" - 1.5M views (2.5% engagement)
+⚡ Highest Velocity Videos (Trending Now)
+┌─────────────────────────────────┬─────────────┬─────────┬─────────┬────────────┐
+│ Title                           │ Channel     │ Views   │ VPD     │ Engagement │
+├─────────────────────────────────┼─────────────┼─────────┼─────────┼────────────┤
+│ New AI Tool Changes Everything  │ TechGuru    │ 55K     │ 27.5K   │ 4.20%      │
+│ My 2025 Productivity System     │ ProductPro  │ 150K    │ 10.0K   │ 3.85%      │
+│ Is This The End of Photoshop?   │ DesignMaster│ 90K     │ 7.5K    │ 5.12%      │
+└─────────────────────────────────┴─────────────┴─────────┴─────────┴────────────┘
 
-Insights:
-• High-performing content with over 1M average views
-• Strong growth trend detected
+💡 Insights
+• Good niche velocity - positive momentum detected
 • Excellent engagement rate
 ```
 
 ### Executive Report Preview
 ```
-Executive Report - Comprehensive Analysis
+💼 Executive Report
 
-Executive Summary
-Keyword: Python tutorial
-Market Size: Large
-Competition Level: High
-Total Views Analyzed: 30,250,000
-Average Views: 1,210,000
+📋 Executive Summary
+Analysis of 200 videos shows Niche Velocity Score of 2.1K VPD with 450K average views. 
+Top channel 'ProductivityGuru' leads with 12.5% market share. 3 rising star channel(s) detected with high velocity.
 
-Actionable Insights:
-1. SEO Strategy: 'python' appears 37 times in successful videos
-   Action: Create content series around "python"
-   Expected Impact: 20-30% increase in search visibility
+💡 Key Insights
+• Average views: 450K
+• Niche Velocity Score: 2.1K VPD
+• Top trending keyword: 'ai-integration' (3.2K VPD)
+• Rising stars detected: 3 channels
 
-2. Posting Strategy: Best performance: Monday at 18:00
-   Action: Schedule your next 3 videos for this time slot
-   Expected Impact: 10-20% increase in initial views
+🎯 Strategic Recommendations
+• Target breakout keyword: 'ai-integration' (3.2K VPD)
+• Study rising star channel 'ModernWorker' for momentum strategies
+• Post at 14:00 for maximum engagement
 
-Next Steps (Prioritized):
-1. Create content series around "python"
-   Timeline: This week | Category: SEO Strategy
+🏢 Competitive Intelligence
+• Top competitor: ProductivityGuru (https://www.youtube.com/channel/UCxxxxxxx)
+• Rising stars detected: 3 channels
+• ⭐ Rising Star #1: ModernWorker (VPD: 3.2K) - https://www.youtube.com/channel/UCyyyyyyy
+• ⭐ Rising Star #2: TechFlow (VPD: 2.8K) - https://www.youtube.com/channel/UCzzzzzzz
+• ⭐ Rising Star #3: ProductivityHacks (VPD: 2.5K) - https://www.youtube.com/channel/UCaaaaaaa
 ```
 
 ---

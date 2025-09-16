@@ -26,10 +26,38 @@ func FormatNumber(num interface{}) string {
 
 // FormatEngagement formats engagement rate to descriptive text
 func FormatEngagement(rate float64) string {
-	if rate > 5 {
+	if rate > 10 {
 		return "excellent"
+	} else if rate > 5 {
+		return "very good"
 	} else if rate > 2 {
 		return "good"
+	} else if rate > 1 {
+		return "average"
 	}
 	return "low"
+}
+
+// FormatEngagementRate formats engagement percentage with proper decimals
+func FormatEngagementRate(rate float64) string {
+	if rate >= 10 {
+		return fmt.Sprintf("%.1f%%", rate)
+	} else if rate >= 1 {
+		return fmt.Sprintf("%.2f%%", rate)
+	} else {
+		return fmt.Sprintf("%.3f%%", rate)
+	}
+}
+
+// FormatVPD formats VPD (Views Per Day) for better readability
+func FormatVPD(vpd float64) string {
+	if vpd >= 1000000 {
+		return fmt.Sprintf("%.1fM", vpd/1000000)
+	} else if vpd >= 1000 {
+		return fmt.Sprintf("%.1fK", vpd/1000)
+	} else if vpd >= 1 {
+		return fmt.Sprintf("%.0f", vpd)
+	} else {
+		return fmt.Sprintf("%.2f", vpd)
+	}
 }

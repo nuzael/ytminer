@@ -19,6 +19,7 @@ type Video struct {
 	ID          string    `json:"id"`
 	Title       string    `json:"title"`
 	Channel     string    `json:"channel"`
+	ChannelID   string    `json:"channel_id"`
 	PublishedAt time.Time `json:"published_at"`
 	Views       int64     `json:"views"`
 	Likes       int64     `json:"likes"`
@@ -26,6 +27,7 @@ type Video struct {
 	Duration    string    `json:"duration"`
 	URL         string    `json:"url"`
 	Description string    `json:"description"`
+	VPD         float64   `json:"vpd"`
 }
 
 type AnalysisLevel int
@@ -252,6 +254,7 @@ func (c *Client) processSearchResults(response *youtube.SearchListResponse, opts
 			ID:          item.Id.VideoId,
 			Title:       item.Snippet.Title,
 			Channel:     item.Snippet.ChannelTitle,
+			ChannelID:   item.Snippet.ChannelId,
 			PublishedAt: publishedAt,
 			URL:         fmt.Sprintf("https://www.youtube.com/watch?v=%s", item.Id.VideoId),
 			Description: item.Snippet.Description,
@@ -268,6 +271,9 @@ func (c *Client) processSearchResults(response *youtube.SearchListResponse, opts
 		video.Likes = stats.Likes
 		video.Comments = stats.Comments
 		video.Duration = stats.Duration
+
+		// Calculate VPD (Views Per Day)
+		video.VPD = calculateVPD(video.Views, video.PublishedAt)
 
 		// Apply filters
 		if opts.MinViews > 0 && video.Views < opts.MinViews {
@@ -323,4 +329,17 @@ func (c *Client) getVideoStats(videoID string) (VideoStats, error) {
 	stats.Duration = item.ContentDetails.Duration
 
 	return stats, nil
+}
+
+// calculateVPD calculates Views Per Day using VPD = video.viewCount / max(1, days_since(video.publishedAt))
+func calculateVPD(views int64, publishedAt time.Time) float64 {
+	now := time.Now()
+	daysSince := int(now.Sub(publishedAt).Hours() / 24)
+	
+	// Protection against division by zero using max(1, daysSince)
+	if daysSince < 1 {
+		daysSince = 1
+	}
+	
+	return float64(views) / float64(daysSince)
 }
