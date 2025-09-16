@@ -553,6 +553,7 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 func showSettingsForm() {
 	var apiKey string
 	var defaultRegion string
+	var defaultDuration string
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -572,6 +573,17 @@ func showSettingsForm() {
 					huh.NewOption("United Kingdom", "GB"),
 				).
 				Value(&defaultRegion),
+
+			huh.NewSelect[string]().
+				Title("⏱️ Default Duration").
+				Description("Default video duration filter").
+				Options(
+					huh.NewOption("Any", "any"),
+					huh.NewOption("Short (< 4min)", "short"),
+					huh.NewOption("Medium (4-20min)", "medium"),
+					huh.NewOption("Long (> 20min)", "long"),
+				).
+				Value(&defaultDuration),
 		),
 	)
 
@@ -587,6 +599,10 @@ func showSettingsForm() {
 		
 		if defaultRegion != "" {
 			config.DefaultRegion = defaultRegion
+		}
+		
+		if defaultDuration != "" {
+			config.DefaultDuration = defaultDuration
 		}
 
 		err := config.SaveConfig()
