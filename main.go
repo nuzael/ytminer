@@ -208,7 +208,8 @@ func showSearchForm() {
 				Description("What would you like to search for?").
 				Placeholder("e.g., Python tutorial").
 				Value(&keyword),
-
+		),
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("🌍 Region").
 				Description("Search region").
@@ -219,7 +220,8 @@ func showSearchForm() {
 					huh.NewOption("United Kingdom", "GB"),
 				).
 				Value(&region),
-
+		),
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("⏱️ Duration").
 				Description("Video duration filter").
@@ -230,7 +232,8 @@ func showSearchForm() {
 					huh.NewOption("Long (> 20min)", "long"),
 				).
 				Value(&duration),
-
+		),
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📅 Time Range").
 				Description("When were the videos published?").
@@ -242,7 +245,8 @@ func showSearchForm() {
 					huh.NewOption("Last year", "1y"),
 				).
 				Value(&timeRange),
-
+		),
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📊 Analysis Level").
 				Description("Choose analysis depth").
@@ -330,14 +334,21 @@ func showAnalysisForm() {
 	var level string
 	var timeRange string
 
-	form := huh.NewForm(
+	// Step 1: keyword
+	kwForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("🔍 Keyword").
 				Description("What topic to analyze?").
 				Placeholder("e.g., Python tutorial").
 				Value(&keyword),
+		),
+	)
+	if err := kwForm.Run(); err != nil { log.Fatal(err) }
 
+	// Step 2: analysis type
+	typeForm := huh.NewForm(
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📊 Analysis Type").
 				Description("Choose the type of analysis").
@@ -349,7 +360,13 @@ func showAnalysisForm() {
 					huh.NewOption("📋 Basic Analysis", "basic"),
 				).
 				Value(&analysisType),
+		),
+	)
+	if err := typeForm.Run(); err != nil { log.Fatal(err) }
 
+	// Step 3: time range
+	timeForm := huh.NewForm(
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📅 Time Range").
 				Description("When were the videos published?").
@@ -361,7 +378,13 @@ func showAnalysisForm() {
 					huh.NewOption("Last year", "1y"),
 				).
 				Value(&timeRange),
+		),
+	)
+	if err := timeForm.Run(); err != nil { log.Fatal(err) }
 
+	// Step 4: level
+	levelForm := huh.NewForm(
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📊 Analysis Level").
 				Description("Choose analysis depth").
@@ -373,10 +396,7 @@ func showAnalysisForm() {
 				Value(&level),
 		),
 	)
-
-	if err := form.Run(); err != nil {
-		log.Fatal(err)
-	}
+	if err := levelForm.Run(); err != nil { log.Fatal(err) }
 
 	// Parse analysis level
 	analysisLevel := parseAnalysisLevel(level)
@@ -556,13 +576,17 @@ func showSettingsForm() {
 	var defaultDuration string
 
 	form := huh.NewForm(
+		// Step 1: API Key
 		huh.NewGroup(
 			huh.NewInput().
 				Title("🔑 YouTube API Key").
 				Description("Enter your YouTube Data API v3 key").
 				Placeholder("AIzaSy...").
 				Value(&apiKey),
+		),
 
+		// Step 2: Default Region
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("🌍 Default Region").
 				Description("Default search region").
@@ -573,7 +597,10 @@ func showSettingsForm() {
 					huh.NewOption("United Kingdom", "GB"),
 				).
 				Value(&defaultRegion),
+		),
 
+		// Step 3: Default Duration
+		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("⏱️ Default Duration").
 				Description("Default video duration filter").
