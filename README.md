@@ -159,7 +159,7 @@ The easiest way to use YTMiner is through interactive mode. Simply run:
 ### What happens in interactive mode:
 
 1. **Topic Selection**: Enter the keyword you want to analyze
-2. **Analysis Scope**: Choose how many videos to analyze (10-50)
+2. **Analysis Level**: Choose analysis depth (quick, balanced, deep)
 3. **Analysis Selection**: Choose specific analyses or run all
 4. **Filters**: Optionally set region and duration filters
 5. **Results**: Get a comprehensive analysis with actionable insights
@@ -169,7 +169,7 @@ The easiest way to use YTMiner is through interactive mode. Simply run:
 Welcome to YTMiner!
 
 1. What topic would you like to analyze? → "Pokemon"
-2. How many videos should I analyze? → 25
+2. Choose analysis level → Balanced (~200 videos)
 3. Choose analysis type → All Analyses
 4. Any specific filters? → Brazil region, any duration
 5. Analysis runs automatically with results!
@@ -204,42 +204,42 @@ Welcome to YTMiner!
 ```bash
 # Market research with full analysis
 # Windows
-.\ytminer.exe -k "marketing strategies" -n 50 -a executive
+.\ytminer.exe -k "marketing strategies" -l balanced -a executive
 # Linux/Mac
-./ytminer.exe -k "marketing strategies" -n 50 -a executive
+./ytminer.exe -k "marketing strategies" -l balanced -a executive
 
 # Competitor intelligence
 # Windows
-.\ytminer.exe -k "your brand" -n 30 -a competitors -a keywords
+.\ytminer.exe -k "your brand" -l balanced -a competitors -a keywords
 # Linux/Mac
-./ytminer.exe -k "your brand" -n 30 -a competitors -a keywords
+./ytminer.exe -k "your brand" -l balanced -a competitors -a keywords
 
 # Trend analysis
 # Windows
-.\ytminer.exe -k "trending topic" -n 25 -a growth
+.\ytminer.exe -k "trending topic" -l quick -a growth
 # Linux/Mac
-./ytminer.exe -k "trending topic" -n 25 -a growth
+./ytminer.exe -k "trending topic" -l quick -a growth
 ```
 
 ### Researchers & Analysts
 ```bash
 # Academic research
 # Windows
-.\ytminer.exe -k "machine learning" -n 50 -a all
+.\ytminer.exe -k "machine learning" -l deep -a all
 # Linux/Mac
-./ytminer.exe -k "machine learning" -n 50 -a all
+./ytminer.exe -k "machine learning" -l deep -a all
 
 # Engagement studies
 # Windows
-.\ytminer.exe -k "education" -n 30 -a growth -a temporal
+.\ytminer.exe -k "education" -l balanced -a growth -a temporal
 # Linux/Mac
-./ytminer.exe -k "education" -n 30 -a growth -a temporal
+./ytminer.exe -k "education" -l balanced -a growth -a temporal
 
 # Content pattern analysis
 # Windows
-.\ytminer.exe -k "science" -n 25 -a titles -a competitors
+.\ytminer.exe -k "science" -l quick -a titles -a competitors
 # Linux/Mac
-./ytminer.exe -k "science" -n 25 -a titles -a competitors
+./ytminer.exe -k "science" -l quick -a titles -a competitors
 ```
 
 ---
@@ -345,7 +345,6 @@ Create a `.env` file with your YouTube API key:
 YOUTUBE_API_KEY=your_youtube_api_key_here
 
 # Optional settings
-YTMINER_MAX_RESULTS=25
 YTMINER_DEFAULT_REGION=any
 YTMINER_DEFAULT_DURATION=any
 ```
@@ -355,7 +354,7 @@ YTMINER_DEFAULT_DURATION=any
 ## Limitations
 
 - **API Quota**: 10,000 units per day (free tier)
-- **Max Results**: 50 videos per search
+- **Search Results**: 50 videos per individual search (controlled by analysis level)
 - **Data**: Some videos may have limited public stats
 
 ## Contributing

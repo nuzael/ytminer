@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"ytminer/analysis"
@@ -553,7 +552,6 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 
 func showSettingsForm() {
 	var apiKey string
-	var maxResults string
 	var defaultRegion string
 
 	form := huh.NewForm(
@@ -563,12 +561,6 @@ func showSettingsForm() {
 				Description("Enter your YouTube Data API v3 key").
 				Placeholder("AIzaSy...").
 				Value(&apiKey),
-
-			huh.NewInput().
-				Title("📊 Default Max Results").
-				Description("Default number of videos to analyze").
-				Placeholder("25").
-				Value(&maxResults),
 
 			huh.NewSelect[string]().
 				Title("🌍 Default Region").
@@ -591,12 +583,6 @@ func showSettingsForm() {
 	if apiKey != "" {
 		config := &config.AppConfig{
 			APIKey: apiKey,
-		}
-		
-		if maxResults != "" {
-			if parsed, err := strconv.Atoi(maxResults); err == nil {
-				config.MaxResults = parsed
-			}
 		}
 		
 		if defaultRegion != "" {

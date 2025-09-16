@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	"ytminer/analysis"
 	"ytminer/utils"
@@ -543,21 +542,3 @@ func DisplayMarkdown(content string) {
 }
 
 
-func formatDuration(duration string) string {
-	// Parse ISO 8601 duration (PT4M13S)
-	duration = strings.TrimPrefix(duration, "PT")
-	
-	// Simple parsing for common formats
-	if strings.Contains(duration, "H") {
-		// Has hours
-		return duration
-	} else if strings.Contains(duration, "M") {
-		// Has minutes
-		return duration
-	} else if strings.Contains(duration, "S") {
-		// Has seconds
-		return duration
-	}
-	
-	return duration
-}
