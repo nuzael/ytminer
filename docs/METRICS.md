@@ -4,6 +4,8 @@ This document explains how YTMiner computes each analysis. Our methodology is ce
 
 ## Global Inputs and Filters
 - Keyword, Region, Duration, Time Range, Order, Analysis Level.
+- Defaults for interactive mode are configurable via env or Settings UI:
+  - `YTMINER_DEFAULT_REGION`, `YTMINER_DEFAULT_DURATION`, `YTMINER_DEFAULT_TIME_RANGE`, `YTMINER_DEFAULT_ORDER`.
 - All analyses operate on the same filtered set of videos. The report header shows the parameters and the total sample size (N videos).
 
 ## Data Cleaning and Normalization
@@ -31,7 +33,8 @@ The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total 
   - Traditional: VideoCount, TotalViews, AvgViews, Market Share %.
   - **Velocity Metrics**:
     - **Channel Average VPD**: The mean VPD of all videos from a specific channel in the sample. Measures the channel's current "hotness".
-- **Rising Stars**: New category to identify emerging competitors. A channel is flagged as "Rising Star" if its `Channel Average VPD` is significantly higher than the overall `Niche Average VPD` (e.g., > 1.5x).
+- **Rising Stars**: New category to identify emerging competitors. A channel is flagged as "Rising Star" if its `Channel Average VPD` is significantly higher than the overall `Niche Average VPD`.
+  - Default threshold: `YTMINER_RISING_STAR_MULTIPLIER=1.5` (configurable via env)
 - Ranking: The main competitor list is ranked by `TotalViews` to show established leaders, but the report highlights channels with highest `Channel Average VPD` and identified "Rising Stars".
 
 ## Temporal Analysis
@@ -42,7 +45,9 @@ The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total 
   - For each keyword (token), we calculate the **Average VPD** of all videos in the sample containing that keyword.
   - Keywords are ranked by this `Average VPD` to reveal which specific topics are currently "hot" and generating high-velocity views.
 - **Core Keywords**: The previous frequency-based ranking is available as "Core Keywords", identifying the most common terms in the niche.
-- **Long-tail Candidates**: The definition remains: low frequency but high `Engagement%`.
+- **Long-tail Candidates**: Low frequency but high `Engagement%`.
+  - Default: `Frequency <= YTMINER_LONG_TAIL_MAX_FREQ` (default 2) AND `Avg Engagement > YTMINER_LONG_TAIL_MIN_ENGAGEMENT` (default 5%).
+  - Both are configurable via env.
 
 ## Engagement Analysis
 - **Engagement Rate**: `(Likes + Comments) / max(1, Views) * 100`

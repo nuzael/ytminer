@@ -5,12 +5,14 @@ import (
 	"sort"
 	"strings"
 
+	"ytminer/config"
 	"ytminer/utils"
 	"ytminer/youtube"
 )
 
 type Analyzer struct {
 	videos []youtube.Video
+	cfg    *config.AppConfig
 }
 
 type GrowthPattern struct {
@@ -124,8 +126,8 @@ type ExecutiveReport struct {
 	NextSteps         []string `json:"next_steps"`
 }
 
-func NewAnalyzer(videos []youtube.Video) *Analyzer {
-	return &Analyzer{videos: videos}
+func NewAnalyzer(videos []youtube.Video, cfg *config.AppConfig) *Analyzer {
+	return &Analyzer{videos: videos, cfg: cfg}
 }
 
 func (a *Analyzer) AnalyzeGrowthPatterns() GrowthPattern {
@@ -303,8 +305,10 @@ func (a *Analyzer) AnalyzeCompetitors() CompetitorAnalysis {
 		// Calculate average engagement for this channel
 		stats.Engagement = stats.Engagement / float64(stats.VideoCount)
 
-		// Check if it's a Rising Star (AvgVPD > 1.5 * nicheAvgVPD)
-		stats.IsRisingStar = stats.AvgVPD > nicheAvgVPD*1.5
+		// Check if it's a Rising Star based on configurable multiplier
+		mult := a.cfg.RisingStarMultiplier
+		if mult <= 0 { mult = 1.5 }
+		stats.IsRisingStar = stats.AvgVPD > nicheAvgVPD*mult
 
 		allChannels = append(allChannels, *stats)
 	}
@@ -336,7 +340,8 @@ func (a *Analyzer) AnalyzeCompetitors() CompetitorAnalysis {
 	// Calculate market share
 	marketShare := make(map[string]float64)
 	for _, channel := range topChannels {
-		marketShare[channel.Channel] = float64(channel.TotalViews) / float64(totalViews) * 100
+		den := max1(float64(totalViews))
+		marketShare[channel.Channel] = float64(channel.TotalViews) / den * 100
 	}
 
 	opportunities := a.generateCompetitorOpportunities(topChannels, marketShare)
@@ -452,7 +457,11 @@ func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
 
 	var longTailKeywords []KeywordStats
 	for _, s := range keywordStats {
-		if s.Frequency < 3 && s.Engagement/float64(s.Frequency) > 5.0 {
+		maxFreq := a.cfg.LongTailMaxFreq
+		if maxFreq < 1 { maxFreq = 2 }
+		minEng := a.cfg.LongTailMinEngagement
+		if minEng < 0 { minEng = 5.0 }
+		if s.Frequency <= maxFreq && (s.Engagement/float64(s.Frequency)) > minEng {
 			longTailKeywords = append(longTailKeywords, *s)
 		}
 	}
@@ -667,6 +676,13 @@ func (a *Analyzer) generateExecutiveSummary(growth GrowthPattern, titles TitleAn
 		risingStarsInfo = fmt.Sprintf(" %d rising star channel(s) detected with high velocity.", len(competitors.RisingStars))
 	}
 	
+	if len(competitors.TopChannels) == 0 {
+		return fmt.Sprintf("Analysis of %d videos shows Niche Velocity Score of %s VPD with %s average views.%s",
+			growth.TotalVideos,
+			utils.FormatVPD(growth.NicheVelocityScore),
+			utils.FormatNumber(growth.AvgViews),
+			risingStarsInfo)
+	}
 	return fmt.Sprintf("Analysis of %d videos shows Niche Velocity Score of %s VPD with %s average views. Top channel '%s' leads with %.1f%% market share.%s", 
 		growth.TotalVideos, 
 		utils.FormatVPD(growth.NicheVelocityScore),

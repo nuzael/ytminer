@@ -59,6 +59,12 @@ A command-line tool for YouTube content creators, marketers, and researchers to 
 ```
 The interactive mode guides you through the entire process with helpful prompts and recommendations. Perfect for users who want a guided experience without memorizing command-line flags.
 
+Defaults used in interactive search (configurable in Settings or .env):
+- Region (`YTMINER_DEFAULT_REGION`)
+- Duration (`YTMINER_DEFAULT_DURATION`)
+- Time Range (`YTMINER_DEFAULT_TIME_RANGE`)
+- Order (`YTMINER_DEFAULT_ORDER`)
+
 ### Analysis Levels
 YTMiner offers three analysis levels to optimize API usage and analysis depth:
 
@@ -293,6 +299,15 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 # Optional settings
 YTMINER_DEFAULT_REGION=any
 YTMINER_DEFAULT_DURATION=any
+YTMINER_DEFAULT_TIME_RANGE=any
+YTMINER_DEFAULT_ORDER=relevance
+
+# Velocity/Keyword thresholds (optional)
+# Rising Star: channel AvgVPD > (multiplier * niche AvgVPD)
+YTMINER_RISING_STAR_MULTIPLIER=1.5
+# Long Tail: keyword Frequency <= max_freq AND Avg Engagement > min_engagement (%)
+YTMINER_LONG_TAIL_MIN_ENGAGEMENT=5.0
+YTMINER_LONG_TAIL_MAX_FREQ=2
 ```
 
 ---

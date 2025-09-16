@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"time"
+	"strconv"
 
 	"ytminer/analysis"
 	"ytminer/config"
@@ -18,6 +19,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var globalAppConfig *config.AppConfig
+
 
 func main() {
 	// Load environment variables
@@ -27,6 +30,7 @@ func main() {
 
 	// Load configuration
 	appConfig := config.LoadConfig()
+	globalAppConfig = appConfig
 
 	// Parse command line flags
 	var (
@@ -35,8 +39,8 @@ func main() {
 		duration    = flag.String("d", appConfig.DefaultDuration, "Video duration (any, short, medium, long)")
 		analysis    = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
 		level       = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
-		timeRange   = flag.String("t", "any", "Time range (any, 7d, 30d, 90d, 1y)")
-		order      = flag.String("o", "relevance", "Search order (relevance, date, viewCount, rating, title)")
+		timeRange   = flag.String("t", appConfig.DefaultTimeRange, "Time range (any, 7d, 30d, 90d, 1y)")
+		order      = flag.String("o", appConfig.DefaultOrder, "Search order (relevance, date, viewCount, rating, title)")
 		noPreview   = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
 		help        = flag.Bool("help", false, "Show help")
 		version     = flag.Bool("version", false, "Show version")
@@ -211,11 +215,11 @@ func showMainMenu() {
 
 func showSearchForm() {
 	var keyword string
-	var region string
-	var duration string
+	var region string = globalAppConfig.DefaultRegion
+	var duration string = globalAppConfig.DefaultDuration
 	var level string
-	var timeRange string
-	var order string
+	var timeRange string = globalAppConfig.DefaultTimeRange
+	var order string = globalAppConfig.DefaultOrder
 	var previewBefore bool
 
 	form := huh.NewForm(
@@ -375,7 +379,7 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 	}
 
 	// Create analyzer
-	analyzer := analysis.NewAnalyzer(videos)
+	analyzer := analysis.NewAnalyzer(videos, globalAppConfig)
 
 	// If no analysis type specified, ask user
 	if analysisType == "" {
@@ -496,9 +500,17 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 }
 
 func showSettingsForm() {
-	var apiKey string
-	var defaultRegion string
-	var defaultDuration string
+	// Load current config to prefill defaults
+	current := config.LoadConfig()
+
+	var apiKey string = current.APIKey
+	var defaultRegion string = current.DefaultRegion
+	var defaultDuration string = current.DefaultDuration
+	var defaultTimeRange string = current.DefaultTimeRange
+	var defaultOrder string = current.DefaultOrder
+	var risingStarMultiplier string = strconv.FormatFloat(current.RisingStarMultiplier, 'f', -1, 64)
+	var longTailMinEngagement string = strconv.FormatFloat(current.LongTailMinEngagement, 'f', -1, 64)
+	var longTailMaxFreq string = strconv.Itoa(current.LongTailMaxFreq)
 
 	form := huh.NewForm(
 		// Step 1: API Key
@@ -537,34 +549,95 @@ func showSettingsForm() {
 				).
 				Value(&defaultDuration),
 		),
+
+		// Step 4: Default Time Range
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("📅 Default Time Range").
+				Description("Default published time filter").
+				Options(
+					huh.NewOption("Any time", "any"),
+					huh.NewOption("Last 7 days", "7d"),
+					huh.NewOption("Last 30 days", "30d"),
+					huh.NewOption("Last 90 days", "90d"),
+					huh.NewOption("Last year", "1y"),
+				).
+				Value(&defaultTimeRange),
+		),
+
+		// Step 5: Default Order
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("🗂️ Default Order").
+				Description("Default search results order").
+				Options(
+					huh.NewOption("Relevance", "relevance"),
+					huh.NewOption("Most Recent", "date"),
+					huh.NewOption("Most Viewed", "viewCount"),
+					huh.NewOption("Rating", "rating"),
+					huh.NewOption("Title (A-Z)", "title"),
+				).
+				Value(&defaultOrder),
+		),
+
+		// Step 6: Velocity/Keyword Thresholds
+		huh.NewGroup(
+			huh.NewInput().
+				Title("🌟 Rising Star Multiplier").
+				Description("Channel AvgVPD > (multiplier × niche AvgVPD). Default: 1.5").
+				Placeholder("1.5").
+				Value(&risingStarMultiplier),
+		),
+		huh.NewGroup(
+			huh.NewInput().
+				Title("🧵 Long Tail Min Engagement (%)").
+				Description("Frequency <= max_freq AND Avg Engagement > min_engagement. Default: 5.0").
+				Placeholder("5.0").
+				Value(&longTailMinEngagement),
+		),
+		huh.NewGroup(
+			huh.NewInput().
+				Title("🧵 Long Tail Max Frequency").
+				Description("Max keyword frequency to consider as long tail. Default: 2").
+				Placeholder("2").
+				Value(&longTailMaxFreq),
+		),
 	)
 
 	if err := form.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	// Save settings to .env file
-	if apiKey != "" {
-		config := &config.AppConfig{
-			APIKey: apiKey,
-		}
-		
-		if defaultRegion != "" {
-			config.DefaultRegion = defaultRegion
-		}
-		
-		if defaultDuration != "" {
-			config.DefaultDuration = defaultDuration
-		}
+	// Build config with possibly updated values
+	cfg := &config.AppConfig{
+		APIKey:                 apiKey,
+		DefaultRegion:          defaultRegion,
+		DefaultDuration:        defaultDuration,
+		DefaultTimeRange:       defaultTimeRange,
+		DefaultOrder:           defaultOrder,
+		RisingStarMultiplier:   current.RisingStarMultiplier,
+		LongTailMinEngagement:  current.LongTailMinEngagement,
+		LongTailMaxFreq:        current.LongTailMaxFreq,
+	}
 
-		err := config.SaveConfig()
-		if err != nil {
-			utils.HandleError(err, "Failed to save settings")
-		} else {
-			ui.DisplaySuccess("Settings saved to .env file!")
-		}
+	// Parse thresholds (keep current on parse error)
+	if f, err := strconv.ParseFloat(risingStarMultiplier, 64); err == nil && f > 0 {
+		cfg.RisingStarMultiplier = f
+	}
+	if f, err := strconv.ParseFloat(longTailMinEngagement, 64); err == nil && f >= 0 {
+		cfg.LongTailMinEngagement = f
+	}
+	if n, err := strconv.Atoi(longTailMaxFreq); err == nil && n >= 1 {
+		cfg.LongTailMaxFreq = n
+	}
+
+	// Save settings to .env file (do not require API key to be changed)
+	if err := cfg.SaveConfig(); err != nil {
+		utils.HandleError(err, "Failed to save settings")
 	} else {
-		ui.DisplayWarning("No API key provided. Settings not saved.")
+		// Update in-memory defaults for this session
+		globalAppConfig = cfg
+		ui.DisplaySuccess("Settings saved to .env file!")
 	}
 
 	fmt.Println()
