@@ -209,13 +209,11 @@ func (a *Analyzer) AnalyzeTitles() TitleAnalysis {
 			phraseCounts[phrase]++
 		}
 
-		// Extract emojis (simplified)
-		for _, char := range video.Title {
-			if char > 127 {
-				emojiCounts[string(char)]++
-			}
+		// Extract emojis (robust)
+		for _, e := range utils.ExtractEmojis(video.Title) {
+			emojiCounts[e]++
 		}
-
+		
 		// Analyze patterns
 		if strings.Contains(title, "tutorial") {
 			patterns = append(patterns, "Tutorial Pattern")
