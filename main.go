@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"time"
 
 	"ytminer/analysis"
@@ -158,12 +159,23 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange, or
 	}
 
 	// Default: just preview results; user can decide next steps interactivos
+	// Ensure preview respects requested order
+	sortVideosByOrder(videos, order)
 	ui.DisplayVideos(videos)
 }
 
-
-
-
+func sortVideosByOrder(videos []youtube.Video, order string) {
+	switch order {
+	case "viewCount":
+		sort.Slice(videos, func(i, j int) bool { return videos[i].Views > videos[j].Views })
+	case "date":
+		sort.Slice(videos, func(i, j int) bool { return videos[i].PublishedAt.After(videos[j].PublishedAt) })
+	case "title":
+		sort.Slice(videos, func(i, j int) bool { return videos[i].Title < videos[j].Title })
+	default:
+		// relevance/rating: keep API order
+	}
+}
 
 func showMainMenu() {
 	var choice string
@@ -326,6 +338,9 @@ func showSearchForm() {
 		showMainMenu()
 		return
 	}
+
+	// Sort videos by order
+	sortVideosByOrder(videos, order)
 
 	if previewBefore {
 		// Show preview then ask to run analysis
