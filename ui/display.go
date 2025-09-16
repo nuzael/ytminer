@@ -128,7 +128,7 @@ func DisplayGrowthAnalysis(growth analysis.GrowthPattern) {
 	fmt.Println()
 
 	// Summary
-	fmt.Println(infoStyle.Render(fmt.Sprintf("Total Videos: %d", growth.TotalVideos)))
+	fmt.Println(infoStyle.Render(fmt.Sprintf("Total Videos (N=%d)", growth.TotalVideos)))
 	fmt.Println(infoStyle.Render(fmt.Sprintf("Average Views: %s", utils.FormatNumber(growth.AvgViews))))
 	fmt.Println(infoStyle.Render(fmt.Sprintf("Average Likes: %s", utils.FormatNumber(growth.AvgLikes))))
 	fmt.Println(infoStyle.Render(fmt.Sprintf("Growth Rate: %.1f%%", growth.GrowthRate)))
@@ -191,6 +191,7 @@ func DisplayTitleAnalysis(titles analysis.TitleAnalysis) {
 	// Common Words
 	if len(titles.CommonWords) > 0 {
 		fmt.Println(headerStyle.Render("🔤 Most Common Words"))
+		fmt.Println(infoStyle.Render(fmt.Sprintf("(N=%d titles)", len(titles.CommonWords))))
 		for i, word := range titles.CommonWords {
 			if i >= 5 {
 				break
@@ -312,7 +313,7 @@ func DisplayTemporalAnalysis(temporal analysis.TemporalAnalysis) {
 
 	// Best Hours
 	if len(temporal.BestHours) > 0 {
-		fmt.Println(headerStyle.Render("🕐 Best Posting Hours"))
+		fmt.Println(headerStyle.Render("�� Best Posting Hours (N≥5 per bucket)"))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -337,7 +338,7 @@ func DisplayTemporalAnalysis(temporal analysis.TemporalAnalysis) {
 
 	// Best Days
 	if len(temporal.BestDays) > 0 {
-		fmt.Println(headerStyle.Render("📅 Best Posting Days"))
+		fmt.Println(headerStyle.Render("📅 Best Posting Days (N≥5 per bucket)"))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -377,6 +378,7 @@ func DisplayKeywordAnalysis(keywords analysis.KeywordAnalysis) {
 	// Trending Keywords
 	if len(keywords.TrendingKeywords) > 0 {
 		fmt.Println(headerStyle.Render("📈 Trending Keywords"))
+		fmt.Println(infoStyle.Render(fmt.Sprintf("(N=%d videos)", len(keywords.TrendingKeywords))))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
@@ -402,6 +404,7 @@ func DisplayKeywordAnalysis(keywords analysis.KeywordAnalysis) {
 	// Long Tail Keywords
 	if len(keywords.LongTailKeywords) > 0 {
 		fmt.Println(headerStyle.Render("🎯 Long-tail Keywords"))
+		fmt.Println(infoStyle.Render(fmt.Sprintf("(N=%d videos)", len(keywords.LongTailKeywords))))
 		fmt.Println()
 
 		table := tablewriter.NewWriter(os.Stdout)
