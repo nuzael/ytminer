@@ -38,7 +38,7 @@ func main() {
 		duration  = flag.String("d", appConfig.DefaultDuration, "Video duration (any, short, medium, long)")
 		analysis  = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
 		level     = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
-		timeRange = flag.String("t", appConfig.DefaultTimeRange, "Time range (any, 7d, 30d, 90d, 1y)")
+		timeRange = flag.String("t", appConfig.DefaultTimeRange, "Time range (any, 1h, 24h, 7d, 30d, 90d, 180d, 1y)")
 		order     = flag.String("o", appConfig.DefaultOrder, "Search order (relevance, date, viewCount, rating, title)")
 		noPreview = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
 		help      = flag.Bool("help", false, "Show help")
@@ -84,28 +84,31 @@ func showHelp() {
 	fmt.Println("  -d string    Video duration: any, short, medium, long (default: any)")
 	fmt.Println("  -a string    Analysis type: growth, titles, competitors, temporal, keywords, executive, all")
 	fmt.Println("  -l string    Analysis level: quick, balanced, deep (default: balanced)")
-	fmt.Println("  -t string    Time range: any, 7d, 30d, 90d, 1y (default: any)")
+	fmt.Println("  -t string    Time range: any, 1h, 24h, 7d, 30d, 90d, 180d, 1y (default: any)")
 	fmt.Println("  -o string    Search order: relevance, date, viewCount, rating, title (default: relevance)")
 	fmt.Println("  --no-preview Skip preview table and run analysis directly")
 	fmt.Println("  --help       Show help")
 	fmt.Println("  --version    Show version")
 	fmt.Println()
 	fmt.Println("ANALYSIS LEVELS:")
-	fmt.Println("  quick        Fast analysis (~200 units, 50 videos, 30-60s)")
-	fmt.Println("  balanced     Balanced analysis (~1000 units, 200 videos, 2-3min)")
-	fmt.Println("  deep         Deep analysis (~3000 units, 600 videos, 5-8min)")
+	fmt.Println("  quick        Fast analysis (~300 units, up to ~150 videos, 30-60s)")
+	fmt.Println("  balanced     Balanced analysis (~800 units, up to ~400 videos, 1-2min)")
+	fmt.Println("  deep         Deep analysis (~2000 units, up to ~1000 videos, 3-5min)")
 	fmt.Println()
 	fmt.Println("TIME RANGES:")
 	fmt.Println("  any          No time filter (all videos)")
+	fmt.Println("  1h           Last 1 hour")
+	fmt.Println("  24h          Last 24 hours")
 	fmt.Println("  7d           Last 7 days")
 	fmt.Println("  30d          Last 30 days")
 	fmt.Println("  90d          Last 90 days")
+	fmt.Println("  180d         Last 180 days")
 	fmt.Println("  1y           Last year")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
 	fmt.Println("  ytminer -k \"Python tutorial\" -l quick -t 7d")
 	fmt.Println("  ytminer -k \"Pokemon\" -r BR -d short -a growth -l balanced -t 30d")
-	fmt.Println("  ytminer -k \"Machine Learning\" -a all -l deep -t 90d")
+	fmt.Println("  ytminer -k \"Machine Learning\" -a executive -l deep -t 90d")
 	fmt.Println()
 	fmt.Println("INTERACTIVE MODE:")
 	fmt.Println("  ytminer")
@@ -216,7 +219,7 @@ func showSearchForm() {
 	var keyword string
 	var region string = globalAppConfig.DefaultRegion
 	var duration string = globalAppConfig.DefaultDuration
-	var level string
+	var level string = "balanced"
 	var timeRange string = globalAppConfig.DefaultTimeRange
 	var order string = globalAppConfig.DefaultOrder
 	var previewBefore bool
@@ -260,9 +263,12 @@ func showSearchForm() {
 				Value(&timeRange).
 				Options(
 					huh.NewOption("Any time", "any").Selected(timeRange == "any"),
+					huh.NewOption("Last 1 hour", "1h").Selected(timeRange == "1h"),
+					huh.NewOption("Last 24 hours", "24h").Selected(timeRange == "24h"),
 					huh.NewOption("Last 7 days", "7d").Selected(timeRange == "7d"),
 					huh.NewOption("Last 30 days", "30d").Selected(timeRange == "30d"),
 					huh.NewOption("Last 90 days", "90d").Selected(timeRange == "90d"),
+					huh.NewOption("Last 180 days", "180d").Selected(timeRange == "180d"),
 					huh.NewOption("Last year", "1y").Selected(timeRange == "1y"),
 				),
 		),
@@ -283,12 +289,12 @@ func showSearchForm() {
 			huh.NewSelect[string]().
 				Title("📊 Analysis Level").
 				Description("Choose analysis depth").
+				Value(&level).
 				Options(
-					huh.NewOption("🔍 Quick Scan (~200 units, 50 videos)", "quick"),
-					huh.NewOption("⚖️ Balanced (~1000 units, 200 videos)", "balanced"),
-					huh.NewOption("🚀 Deep Dive (~3000 units, 600 videos)", "deep"),
-				).
-				Value(&level),
+					huh.NewOption("🔍 Quick Scan (~300 units, up to ~150 videos)", "quick").Selected(level == "quick"),
+					huh.NewOption("⚖️ Balanced (~800 units, up to ~400 videos)", "balanced").Selected(level == "balanced"),
+					huh.NewOption("🚀 Deep Dive (~2000 units, up to ~1000 videos)", "deep").Selected(level == "deep"),
+				),
 		),
 		huh.NewGroup(
 			huh.NewConfirm().
@@ -559,9 +565,12 @@ func showSettingsForm() {
 				Value(&defaultTimeRange).
 				Options(
 					huh.NewOption("Any time", "any").Selected(defaultTimeRange == "any"),
+					huh.NewOption("Last 1 hour", "1h").Selected(defaultTimeRange == "1h"),
+					huh.NewOption("Last 24 hours", "24h").Selected(defaultTimeRange == "24h"),
 					huh.NewOption("Last 7 days", "7d").Selected(defaultTimeRange == "7d"),
 					huh.NewOption("Last 30 days", "30d").Selected(defaultTimeRange == "30d"),
 					huh.NewOption("Last 90 days", "90d").Selected(defaultTimeRange == "90d"),
+					huh.NewOption("Last 180 days", "180d").Selected(defaultTimeRange == "180d"),
 					huh.NewOption("Last year", "1y").Selected(defaultTimeRange == "1y"),
 				),
 		),
@@ -672,15 +681,24 @@ func parseTimeRange(timeRange string) (string, string) {
 	now := time.Now()
 
 	switch timeRange {
+	case "1h":
+		oneHourAgo := now.Add(time.Hour * -1)
+		return oneHourAgo.Format(time.RFC3339), ""
+	case "24h":
+		oneDayAgo := now.AddDate(0, 0, -1)
+		return oneDayAgo.Format(time.RFC3339), ""
 	case "7d":
-		sevenDaysAgo := now.AddDate(0, 0, -7)
-		return sevenDaysAgo.Format(time.RFC3339), ""
+		oneWeekAgo := now.AddDate(0, 0, -7)
+		return oneWeekAgo.Format(time.RFC3339), ""
 	case "30d":
-		thirtyDaysAgo := now.AddDate(0, 0, -30)
-		return thirtyDaysAgo.Format(time.RFC3339), ""
+		oneMonthAgo := now.AddDate(0, -1, 0)
+		return oneMonthAgo.Format(time.RFC3339), ""
 	case "90d":
-		ninetyDaysAgo := now.AddDate(0, 0, -90)
-		return ninetyDaysAgo.Format(time.RFC3339), ""
+		threeMonthsAgo := now.AddDate(0, -3, 0)
+		return threeMonthsAgo.Format(time.RFC3339), ""
+	case "180d":
+		sixMonthsAgo := now.AddDate(0, -6, 0)
+		return sixMonthsAgo.Format(time.RFC3339), ""
 	case "1y":
 		oneYearAgo := now.AddDate(-1, 0, 0)
 		return oneYearAgo.Format(time.RFC3339), ""

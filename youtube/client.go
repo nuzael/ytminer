@@ -39,15 +39,15 @@ const (
 )
 
 type SearchOptions struct {
-	Query         string
-	MaxResults    int64
-	Region        string
-	Duration      string
-	Order         string
-	MinViews      int64
-	MinLikes      int64
-	Level         AnalysisLevel
-	PublishedAfter string
+	Query           string
+	MaxResults      int64
+	Region          string
+	Duration        string
+	Order           string
+	MinViews        int64
+	MinLikes        int64
+	Level           AnalysisLevel
+	PublishedAfter  string
 	PublishedBefore string
 }
 
@@ -67,13 +67,8 @@ func NewClient() (*Client, error) {
 }
 
 func (c *Client) SearchVideos(opts SearchOptions) ([]Video, error) {
-	// Use level-based search if level is specified
-	if opts.Level != QuickScan {
-		return c.SearchVideosWithLevel(opts)
-	}
-
-	// Original single search for QuickScan
-	return c.searchSingle(opts)
+	// Use level-based search for all levels now
+	return c.SearchVideosWithLevel(opts)
 }
 
 func (c *Client) SearchVideosWithLevel(opts SearchOptions) ([]Video, error) {
@@ -82,7 +77,7 @@ func (c *Client) SearchVideosWithLevel(opts SearchOptions) ([]Video, error) {
 
 	switch opts.Level {
 	case QuickScan:
-		return c.searchSingle(opts)
+		allVideos = c.searchQuickScan(opts, seenIDs)
 	case Balanced:
 		allVideos = c.searchBalanced(opts, seenIDs)
 	case DeepDive:
@@ -92,137 +87,203 @@ func (c *Client) SearchVideosWithLevel(opts SearchOptions) ([]Video, error) {
 	return allVideos, nil
 }
 
-func (c *Client) searchSingle(opts SearchOptions) ([]Video, error) {
-	call := c.service.Search.List([]string{"id", "snippet"}).
-		Q(opts.Query).
-		MaxResults(opts.MaxResults).
-		Type("video")
+func (c *Client) searchQuickScan(opts SearchOptions, seenIDs map[string]bool) []Video {
+	var allVideos []Video
+	totalSearches := 0
+	totalItemsIn := 0
+	totalItemsOut := 0
+	targetVideos := 150 // Target for Quick Scan
 
-	if opts.Region != "" && opts.Region != "any" {
-		call = call.RegionCode(opts.Region)
+	userOrder := opts.Order
+	if userOrder == "" {
+		userOrder = "relevance"
 	}
 
-	if opts.Duration != "" && opts.Duration != "any" {
-		call = call.VideoDuration(opts.Duration)
+	log.Printf("searchQuickScan: Starting adaptive strategy targeting %d videos", targetVideos)
+
+	// Phase 1: Try up to 3 pages of user's chosen order
+	pageToken := ""
+	for page := 1; page <= 3; page++ {
+		videos, nextToken := c.searchWithPagination(opts.Query, opts.Region, opts.Duration, userOrder, 50, pageToken, opts)
+		totalSearches++
+		totalItemsIn += len(videos)
+		unique := c.filterUniqueVideos(videos, seenIDs)
+		totalItemsOut += len(unique)
+		allVideos = append(allVideos, unique...)
+
+		pageToken = nextToken
+		if pageToken == "" {
+			log.Printf("searchQuickScan: No more pages available for order=%s after %d pages", userOrder, page)
+			break
+		}
 	}
 
-	if opts.Order != "" {
-		call = call.Order(opts.Order)
+	// Phase 2: If we have less than 50% of target, complement with other orders
+	currentCount := len(allVideos)
+	if currentCount < targetVideos/2 {
+		log.Printf("searchQuickScan: Only %d videos from primary order, complementing with backup orders", currentCount)
+
+		// Try relevance as backup (if not already used)
+		if userOrder != "relevance" {
+			backupVideos := c.searchWithBackupOrder(opts, seenIDs, "relevance", 2) // 2 pages max
+			totalSearches += 2
+			totalItemsIn += len(backupVideos)
+			unique := c.filterUniqueVideos(backupVideos, seenIDs)
+			totalItemsOut += len(unique)
+			allVideos = append(allVideos, unique...)
+		}
+
+		// If still need more, try viewCount (if not already used)
+		if len(allVideos) < targetVideos/2 && userOrder != "viewCount" {
+			backupVideos := c.searchWithBackupOrder(opts, seenIDs, "viewCount", 1) // 1 page
+			totalSearches += 1
+			totalItemsIn += len(backupVideos)
+			unique := c.filterUniqueVideos(backupVideos, seenIDs)
+			totalItemsOut += len(unique)
+			allVideos = append(allVideos, unique...)
+		}
 	}
 
-	if opts.PublishedAfter != "" {
-		call = call.PublishedAfter(opts.PublishedAfter)
-	}
-
-	if opts.PublishedBefore != "" {
-		call = call.PublishedBefore(opts.PublishedBefore)
-	}
-
-	response, err := call.Do()
-	if err != nil {
-		return nil, fmt.Errorf("failed to search videos: %v", err)
-	}
-
-	videos, err := c.processSearchResults(response, opts)
-	if err != nil {
-		return nil, err
-	}
-	return videos, nil
+	duplicatesRemoved := totalItemsIn - totalItemsOut
+	log.Printf("searchQuickScan SUMMARY: searches=%d items_in=%d duplicates_removed=%d final_out=%d target=%d", totalSearches, totalItemsIn, duplicatesRemoved, len(allVideos), targetVideos)
+	return allVideos
 }
 
 func (c *Client) searchBalanced(opts SearchOptions, seenIDs map[string]bool) []Video {
 	var allVideos []Video
-	
-	// First: user-selected settings (order/region/duration)
+	totalSearches := 0
+	totalItemsIn := 0
+	totalItemsOut := 0
+	targetVideos := 400 // Target for Balanced
+
 	userOrder := opts.Order
-	if userOrder == "" { userOrder = "relevance" }
-	videos0 := c.searchWithParams(opts.Query, opts.Region, opts.Duration, userOrder, 50, opts)
-	allVideos = append(allVideos, c.filterUniqueVideos(videos0, seenIDs)...)
-	
-	// Search 1: Original query (broad) – keep relevance for diversity if user order differs
-	if userOrder != "relevance" || opts.Region != "any" || opts.Duration != "any" {
-		videos1 := c.searchWithParams(opts.Query, "any", "any", "relevance", 50, opts)
-		allVideos = append(allVideos, c.filterUniqueVideos(videos1, seenIDs)...)
+	if userOrder == "" {
+		userOrder = "relevance"
 	}
-	
-	// Search 2: Different region (only when region not fixed)
-	if opts.Region == "any" || opts.Region == "" {
-		videos2 := c.searchWithParams(opts.Query, "BR", "any", userOrder, 50, opts)
-		allVideos = append(allVideos, c.filterUniqueVideos(videos2, seenIDs)...)
+
+	log.Printf("searchBalanced: Starting adaptive strategy targeting %d videos", targetVideos)
+
+	// Phase 1: Try up to 5 pages of user's chosen order
+	pageToken := ""
+	for page := 1; page <= 5; page++ {
+		videos, nextToken := c.searchWithPagination(opts.Query, opts.Region, opts.Duration, userOrder, 50, pageToken, opts)
+		totalSearches++
+		totalItemsIn += len(videos)
+		unique := c.filterUniqueVideos(videos, seenIDs)
+		totalItemsOut += len(unique)
+		allVideos = append(allVideos, unique...)
+
+		pageToken = nextToken
+		if pageToken == "" {
+			log.Printf("searchBalanced: No more pages available for order=%s after %d pages", userOrder, page)
+			break
+		}
 	}
-	
-	// Search 3: Different duration (only when duration not fixed)
-	if opts.Duration == "any" || opts.Duration == "" {
-		videos3 := c.searchWithParams(opts.Query, "any", "medium", userOrder, 50, opts)
-		allVideos = append(allVideos, c.filterUniqueVideos(videos3, seenIDs)...)
+
+	// Phase 2: If we have less than 50% of target, complement with other orders
+	currentCount := len(allVideos)
+	if currentCount < targetVideos/2 {
+		log.Printf("searchBalanced: Only %d videos from primary order, complementing with backup orders", currentCount)
+
+		// Backup sequence: relevance, viewCount, date
+		backupOrders := []string{"relevance", "viewCount", "date"}
+		pagesPerBackup := []int{3, 2, 1} // 3+2+1 = 6 additional searches max
+
+		for i, backupOrder := range backupOrders {
+			if backupOrder != userOrder && len(allVideos) < targetVideos*3/4 {
+				backupVideos := c.searchWithBackupOrder(opts, seenIDs, backupOrder, pagesPerBackup[i])
+				totalSearches += pagesPerBackup[i]
+				totalItemsIn += len(backupVideos)
+				unique := c.filterUniqueVideos(backupVideos, seenIDs)
+				totalItemsOut += len(unique)
+				allVideos = append(allVideos, unique...)
+			}
+		}
 	}
-	
-	// Search 4: Different order (date) for recency
-	videos4 := c.searchWithParams(opts.Query, "any", "any", "date", 50, opts)
-	allVideos = append(allVideos, c.filterUniqueVideos(videos4, seenIDs)...)
-	
+
+	duplicatesRemoved := totalItemsIn - totalItemsOut
+	log.Printf("searchBalanced SUMMARY: searches=%d items_in=%d duplicates_removed=%d final_out=%d target=%d", totalSearches, totalItemsIn, duplicatesRemoved, len(allVideos), targetVideos)
 	return allVideos
 }
 
 func (c *Client) searchDeepDive(opts SearchOptions, seenIDs map[string]bool) []Video {
 	var allVideos []Video
-	
+	totalSearches := 0
+	totalItemsIn := 0
+	totalItemsOut := 0
+	targetVideos := 1000 // Target for Deep Dive
+
 	userOrder := opts.Order
-	if userOrder == "" { userOrder = "relevance" }
-	
-	// Search 0: user-selected settings
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, opts.Region, opts.Duration, userOrder, 50, opts), seenIDs)...)
-	
-	// Search 1-3: Original query with different orders (ensure diversity)
-	if userOrder != "relevance" {
-		allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "relevance", 50, opts), seenIDs)...)
+	if userOrder == "" {
+		userOrder = "relevance"
 	}
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "viewCount", 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "any", "date", 50, opts), seenIDs)...)
-	
-	// Search 4-6: Different regions
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "BR", "any", userOrder, 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "US", "any", userOrder, 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "GB", "any", userOrder, 50, opts), seenIDs)...)
-	
-	// Search 7-9: Different durations
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "short", userOrder, 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "medium", userOrder, 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(opts.Query, "any", "long", userOrder, 50, opts), seenIDs)...)
-	
-	// Search 10-12: Related queries with different approaches
-	relatedQuery1 := opts.Query + " tutorial"
-	relatedQuery2 := opts.Query + " guide"
-	relatedQuery3 := opts.Query + " tips"
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery1, "any", "any", userOrder, 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery2, "any", "any", "viewCount", 50, opts), seenIDs)...)
-	allVideos = append(allVideos, c.filterUniqueVideos(c.searchWithParams(relatedQuery3, "any", "any", "date", 50, opts), seenIDs)...)
-	
+
+	log.Printf("searchDeepDive: Starting adaptive strategy targeting %d videos", targetVideos)
+
+	// Phase 1: Try up to 10 pages of user's chosen order
+	pageToken := ""
+	for page := 1; page <= 10; page++ {
+		videos, nextToken := c.searchWithPagination(opts.Query, opts.Region, opts.Duration, userOrder, 50, pageToken, opts)
+		totalSearches++
+		totalItemsIn += len(videos)
+		unique := c.filterUniqueVideos(videos, seenIDs)
+		totalItemsOut += len(unique)
+		allVideos = append(allVideos, unique...)
+
+		pageToken = nextToken
+		if pageToken == "" {
+			log.Printf("searchDeepDive: No more pages available for order=%s after %d pages", userOrder, page)
+			break
+		}
+	}
+
+	// Phase 2: If we have less than 50% of target, complement with other orders
+	currentCount := len(allVideos)
+	if currentCount < targetVideos/2 {
+		log.Printf("searchDeepDive: Only %d videos from primary order, complementing with backup orders", currentCount)
+
+		// Comprehensive backup sequence: relevance, viewCount, date, rating
+		backupOrders := []string{"relevance", "viewCount", "date", "rating"}
+		pagesPerBackup := []int{5, 3, 2, 2} // 5+3+2+2 = 12 additional searches max
+
+		for i, backupOrder := range backupOrders {
+			if backupOrder != userOrder && len(allVideos) < targetVideos*3/4 {
+				backupVideos := c.searchWithBackupOrder(opts, seenIDs, backupOrder, pagesPerBackup[i])
+				totalSearches += pagesPerBackup[i]
+				totalItemsIn += len(backupVideos)
+				unique := c.filterUniqueVideos(backupVideos, seenIDs)
+				totalItemsOut += len(unique)
+				allVideos = append(allVideos, unique...)
+			}
+		}
+	}
+
+	duplicatesRemoved := totalItemsIn - totalItemsOut
+	log.Printf("searchDeepDive SUMMARY: searches=%d items_in=%d duplicates_removed=%d final_out=%d target=%d", totalSearches, totalItemsIn, duplicatesRemoved, len(allVideos), targetVideos)
 	return allVideos
 }
 
-func (c *Client) searchWithParams(query, region, duration, order string, maxResults int64, originalOpts SearchOptions) []Video {
+func (c *Client) searchWithPagination(query, region, duration, order string, maxResults int64, pageToken string, originalOpts SearchOptions) ([]Video, string) {
 	call := c.service.Search.List([]string{"id", "snippet"}).
 		Q(query).
-		MaxResults(maxResults).
+		MaxResults(50). // Always request max 50 per API call
 		Type("video")
 
+	if pageToken != "" {
+		call = call.PageToken(pageToken)
+	}
 	if region != "" && region != "any" {
 		call = call.RegionCode(region)
 	}
-
 	if duration != "" && duration != "any" {
 		call = call.VideoDuration(duration)
 	}
-
 	if order != "" {
 		call = call.Order(order)
 	}
-
 	if originalOpts.PublishedAfter != "" {
 		call = call.PublishedAfter(originalOpts.PublishedAfter)
 	}
-
 	if originalOpts.PublishedBefore != "" {
 		call = call.PublishedBefore(originalOpts.PublishedBefore)
 	}
@@ -230,15 +291,13 @@ func (c *Client) searchWithParams(query, region, duration, order string, maxResu
 	response, err := call.Do()
 	if err != nil {
 		log.Printf("Warning: failed to search with params %s: %v", query, err)
-		return []Video{}
+		return []Video{}, ""
 	}
 
-	videos, err := c.processSearchResults(response, originalOpts)
-	if err != nil {
-		log.Printf("Warning: failed to process search results: %v", err)
-		return []Video{}
-	}
-	return videos
+	videos, tele := c.processSearchResultsBatched(response.Items, originalOpts)
+	log.Printf("searchWithPagination: q=%q r=%s d=%s o=%s items_in=%d stats_failed=%d filtered=%d items_out=%d", query, region, duration, order, len(response.Items), tele.statsFailed, tele.filtered, len(videos))
+
+	return videos, response.NextPageToken
 }
 
 func (c *Client) processSearchResults(response *youtube.SearchListResponse, opts SearchOptions) ([]Video, error) {
@@ -289,6 +348,59 @@ func (c *Client) processSearchResults(response *youtube.SearchListResponse, opts
 	return videos, nil
 }
 
+func (c *Client) processSearchResultsBatched(collected []*youtube.SearchResult, opts SearchOptions) ([]Video, Telemetry) {
+	var videos []Video
+	var tele Telemetry
+
+	for _, item := range collected {
+		// Parse published date
+		publishedAt, err := time.Parse(time.RFC3339, item.Snippet.PublishedAt)
+		if err != nil {
+			publishedAt = time.Now()
+		}
+
+		video := Video{
+			ID:          item.Id.VideoId,
+			Title:       item.Snippet.Title,
+			Channel:     item.Snippet.ChannelTitle,
+			ChannelID:   item.Snippet.ChannelId,
+			PublishedAt: publishedAt,
+			URL:         fmt.Sprintf("https://www.youtube.com/watch?v=%s", item.Id.VideoId),
+			Description: item.Snippet.Description,
+		}
+
+		// Get video statistics
+		stats, err := c.getVideoStats(item.Id.VideoId)
+		if err != nil {
+			log.Printf("Warning: failed to get stats for video %s: %v", item.Id.VideoId, err)
+			tele.statsFailed++
+			continue
+		}
+
+		video.Views = stats.Views
+		video.Likes = stats.Likes
+		video.Comments = stats.Comments
+		video.Duration = stats.Duration
+
+		// Calculate VPD (Views Per Day)
+		video.VPD = calculateVPD(video.Views, video.PublishedAt)
+
+		// Apply filters
+		if opts.MinViews > 0 && video.Views < opts.MinViews {
+			tele.filtered++
+			continue
+		}
+		if opts.MinLikes > 0 && video.Likes < opts.MinLikes {
+			tele.filtered++
+			continue
+		}
+
+		videos = append(videos, video)
+	}
+
+	return videos, tele
+}
+
 func (c *Client) filterUniqueVideos(videos []Video, seenIDs map[string]bool) []Video {
 	var uniqueVideos []Video
 	for _, video := range videos {
@@ -335,11 +447,37 @@ func (c *Client) getVideoStats(videoID string) (VideoStats, error) {
 func calculateVPD(views int64, publishedAt time.Time) float64 {
 	now := time.Now()
 	daysSince := int(now.Sub(publishedAt).Hours() / 24)
-	
+
 	// Protection against division by zero using max(1, daysSince)
 	if daysSince < 1 {
 		daysSince = 1
 	}
-	
+
 	return float64(views) / float64(daysSince)
+}
+
+type Telemetry struct {
+	statsFailed int
+	filtered    int
+}
+
+// Helper function to search with backup orders
+func (c *Client) searchWithBackupOrder(opts SearchOptions, seenIDs map[string]bool, order string, maxPages int) []Video {
+	var backupVideos []Video
+	pageToken := ""
+
+	log.Printf("searchWithBackupOrder: Trying %d pages of order=%s", maxPages, order)
+
+	for page := 1; page <= maxPages; page++ {
+		videos, nextToken := c.searchWithPagination(opts.Query, opts.Region, opts.Duration, order, 50, pageToken, opts)
+		backupVideos = append(backupVideos, videos...)
+
+		pageToken = nextToken
+		if pageToken == "" {
+			log.Printf("searchWithBackupOrder: No more pages available for order=%s after %d pages", order, page)
+			break
+		}
+	}
+
+	return backupVideos
 }

@@ -6,44 +6,52 @@ A command-line tool for YouTube content creators, marketers, and researchers to 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![YouTube API](https://img.shields.io/badge/YouTube-API%20v3-red.svg)](https://developers.google.com/youtube/v3)
 
+## Quick Reference
+
+- Interactive (recommended):
+```bash
+# Windows
+.\ytminer.exe
+# Linux/Mac
+./ytminer.exe
+```
+
+- CLI basics:
+```bash
+# Quick scan
+ytminer -k "ai tools" -l quick
+# Balanced with region and time range
+ytminer -k "meditation" -r BR -t 30d -l balanced
+# Deep dive, most recent, executive report
+ytminer -k "content marketing" -o date -l deep -a executive
+```
+
 ## Core Analysis Features
 
 ### Growth Pattern Analysis (`-a growth`)
-- **Niche Velocity Score (Avg. VPD)**: Measures overall niche momentum based on Views Per Day.
-- **Highest Velocity Videos**: Identifies videos that are trending now, ranked by VPD.
-- Performance metrics based on velocity, not just total views.
-- Momentum analysis and viral potential detection.
+- Velocity-first metrics (Avg. VPD, momentum)
+- Trending videos ranked by velocity
+- Early signals for breakout topics
 
-### Title Pattern Analysis (`-a titles`) 
-- Winning title formulas and patterns.
-- Most common words in successful videos.
-- Emoji usage patterns and effectiveness.
-- Title length optimization insights.
+### Title Pattern Analysis (`-a titles`)
+- High-performing title patterns
+- Keywords, emojis, and length insights
 
 ### Competitor Analysis (`-a competitors`)
-- **Rising Stars Detection**: Identifies emerging channels with high velocity (VPD > 1.5x niche average).
-- **Direct Channel Links**: Provides clickable YouTube channel URLs for immediate analysis.
-- Analysis of established competitors vs rising channels.
-- Velocity metrics (Avg. VPD) per channel to identify momentum.
-- Market share combined with velocity analysis.
+- Rising Stars detection (VPD > niche baseline)
+- Channel velocity and market share
 
 ### Temporal Analysis (`-a temporal`)
-- Optimal posting times (best hours and days).
-- Performance by hour and day of week.
-- Peak engagement periods.
-- Posting schedule optimization.
+- Best posting windows (day/hour)
+- Engagement over time-of-day and weekday
 
 ### Keyword Analysis (`-a keywords`)
-- **Trending Keywords (Breakout Topics)**: Ranked by Avg. VPD to identify "hot" topics with momentum.
-- **Core Keywords**: Most common words based on frequency (traditional analysis).
-- Long-tail keywords with high engagement for SEO opportunities.
-- Clear separation between viral vs popular topics.
+- Breakout keywords by Avg. VPD
+- Core keywords by frequency
 
 ### Executive Reports (`-a executive`)
-- Comprehensive reports focusing on market velocity and momentum.
-- Strategic recommendations based on VPD metrics.
-- Identifies "Rising Stars" and breakout topics for monitoring.
-- Performance benchmarks including Niche Velocity Score.
+- Summary of niche momentum and leaders
+- Strategic recommendations
 
 ---
 
@@ -66,34 +74,68 @@ Defaults used in interactive search (configurable in Settings or .env):
 - Order (`YTMINER_DEFAULT_ORDER`)
 
 ### Analysis Levels
-YTMiner offers three analysis levels to optimize API usage and analysis depth:
+YTMiner offers three analysis levels with adaptive search strategy to optimize API usage and maximize data collection:
 
-#### Quick Scan (~200 units, 50 videos, 30-60s)
+#### Quick Scan (~300 units, up to ~150 videos, 30-60s)
 - **Best for**: Quick exploration, demos, trend validation
-- **Data**: Single search with 50 videos
+- **Strategy**: Prioritizes your chosen order, adapts automatically if topic has limited content
+- **Data**: 3 pages of your chosen criteria, complemented with backup orders if needed
 - **Insights**: Basic patterns and velocity indicators
 - **Use case**: "Is this topic hot right now?"
 
-#### Balanced (~1000 units, 200 videos, 2-3min)
+#### Balanced (~800 units, up to ~400 videos, 1-2min)
 - **Best for**: Regular content creators, marketers
-- **Data**: 4 searches across different parameters
-- **Insights**: Reliable patterns and recommendations
+- **Strategy**: Deep dive into your preferences, intelligently supplements for comprehensive coverage
+- **Data**: 5 pages of your chosen criteria + backup orders (relevance, viewCount, date) as needed
+- **Insights**: Comprehensive patterns and recommendations
 - **Use case**: "What is the current growth strategy in this niche?"
 
-#### Deep Dive (~3000 units, 600 videos, 5-8min)
+#### Deep Dive (~2000 units, up to ~1000 videos, 3-5min)
 - **Best for**: Strategic analysis, research, business decisions
-- **Data**: 12 searches across regions, durations, and related topics
-- **Insights**: Comprehensive market and competitor velocity intelligence
+- **Strategy**: Maximum depth with intelligent adaptation for small niches
+- **Data**: 10 pages of your exact configuration + comprehensive backup orders (relevance, viewCount, date, rating) as needed
+- **Insights**: Exhaustive market and competitor velocity intelligence
 - **Use case**: "What's the complete competitive landscape, including emerging players?"
 
-### 1. Get YouTube API Key
-1. Visit [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project
-3. Enable **YouTube Data API v3**
+**Why this approach?** If you want trending content (`order=date`) but the niche only has 50 recent videos, our system automatically supplements with the most relevant content available. This ensures you get maximum value from your API quota while respecting your primary analysis intent. The strategy creates **gold-standard data** for identifying trends, growth opportunities, and niche analysis.
+
+### How Search Order Works
+
+The `order` parameter serves two important functions:
+
+1. **Data Collection Priority**: Your chosen order determines what type of content we prioritize during data collection
+2. **Final Display Sorting**: The final results table is sorted by your chosen order for consistent analysis
+
+**Available Orders:**
+- `relevance`: YouTube's relevance algorithm (best overall match)
+- `date`: Most recent uploads first (trending/fresh content)
+- `viewCount`: Highest view counts first (viral/popular content)
+- `rating`: Highest rated content first (quality-focused)
+- `title`: Alphabetical order (A-Z)
+
+**Adaptive Behavior:**
+- **Small niches**: If your chosen order exhausts available content, we automatically supplement with other orders
+- **Large niches**: We focus entirely on your chosen order for maximum analytical depth
+- **Quality guarantee**: All searches respect your region, duration, and time range filters
+
+**Example**: If you choose `order=viewCount` for "meditation techniques":
+1. We first collect the highest-viewed meditation videos
+2. If there aren't enough, we supplement with most relevant ones
+3. Final results are sorted by view count for your analysis
+4. This gives you both viral content AND comprehensive coverage
+
+---
+
+## Installation
+
+### 1. Get a YouTube API Key
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable the **YouTube Data API v3**
 4. Create credentials (API Key)
 5. Copy your API key
 
-### 2. Download & Setup
+### 2. Download YTMiner
 ```bash
 # Download the pre-built executable
 # Or build from source: go build -o ytminer.exe main.go
@@ -119,113 +161,59 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 
 ### 4. Test the Tool
 ```bash
-# Test help
-# Windows
-.\ytminer.exe --help
-# Linux/Mac
-./ytminer.exe --help
-
-# Test different analysis levels with time filters
-# Quick scan - last 7 days
-# Windows
-.\ytminer.exe -k "programming tutorial" -l quick -t 7d
-# Linux/Mac
-./ytminer.exe -k "programming tutorial" -l quick -t 7d
-
-# Balanced analysis - last 30 days
-# Windows
-.\ytminer.exe -k "programming tutorial" -l balanced -a all -t 30d
-# Linux/Mac
-./ytminer.exe -k "programming tutorial" -l balanced -a all -t 30d
-
-# Deep dive analysis - last 90 days
-# Windows
-.\ytminer.exe -k "programming tutorial" -l deep -a all -t 90d
-# Linux/Mac
-./ytminer.exe -k "programming tutorial" -l deep -a all -t 90d
-```
-
----
-
-## Interactive Mode
-
-The easiest way to use YTMiner is through interactive mode. Simply run:
-
-```bash
-# Windows (PowerShell/CMD)
+# Interactive mode (recommended for first-time users)
 .\ytminer.exe
 
-# Linux/Mac
-./ytminer.exe
-```
+# Quick CLI test
+.\ytminer.exe -k "productivity tips" -l quick
 
-### What happens in interactive mode:
-
-1. **Topic Selection**: Enter the keyword you want to analyze
-2. **Filters**: Choose Region, Duration, Time Range, **Order**, and Analysis Level
-3. **Preview Choice**: Decide if you want to preview the results before analysis
-4. **Results/Analysis**:
-   - If you chose to preview, a results table is shown and you can confirm running the analysis
-   - If you skip preview, the selected analysis runs immediately after the search
-
-### Example Interactive Session:
-```
-Welcome to YTMiner!
-
-1. Enter keyword → "Pokemon"
-2. Choose filters → Region: BR, Duration: any, Time Range: 30d, Order: viewCount, Level: balanced
-3. Preview results before analysis? → Yes
-4. Table is shown → Confirm to run analysis
+# See all options
+.\ytminer.exe --help
 ```
 
 ---
 
 ## Usage Examples
 
-### Go straight to analysis (skip preview)
+### Basic Usage
 ```bash
-# Skip preview; you'll be prompted for the analysis type interactively
-.\ytminer.exe -k "python tutorial" -l quick --no-preview
+# Interactive mode (guided experience)
+.\ytminer.exe
 
-# Skip preview and specify analysis type, order by most viewed
-.\ytminer.exe -k "python tutorial" -l balanced -a growth -o viewCount --no-preview
+# Quick keyword analysis
+.\ytminer.exe -k "ai tools" -l quick
+
+# Deep competitive analysis
+.\ytminer.exe -k "content marketing" -l deep -a growth
+
+# Regional analysis with time constraints
+.\ytminer.exe -k "meditation" -r BR -t 7d -l balanced
 ```
 
-### Digital Marketers
+### Advanced Filtering
 ```bash
-# Market research with full analysis
-# Windows
-.\ytminer.exe -k "marketing strategies" -l balanced -a executive -o date
-# Linux/Mac
-./ytminer.exe -k "marketing strategies" -l balanced -a executive -o date
+# Analyze short-form content trends
+.\ytminer.exe -k "cooking hacks" -d short -o date -l deep
 
-# Competitor intelligence (run analyses separately)
-# Windows
-.\ytminer.exe -k "your brand" -l balanced -a competitors -o relevance
-.\ytminer.exe -k "your brand" -l balanced -a keywords -o relevance
-# Linux/Mac
-./ytminer.exe -k "your brand" -l balanced -a competitors -o relevance
-./ytminer.exe -k "your brand" -l balanced -a keywords -o relevance
+# Find high-engagement long-form content
+.\ytminer.exe -k "productivity" -d long -o viewCount -l balanced
 
-# Trend analysis
-# Windows
-.\ytminer.exe -k "trending topic" -l quick -a growth -o viewCount
-# Linux/Mac
-./ytminer.exe -k "trending topic" -l quick -a growth -o viewCount
+# Recent trends in specific region
+.\ytminer.exe -k "tech reviews" -r US -t 30d -o date -l quick
 ```
 
-### Region and defaults
+### Market Analysis Workflows
 ```bash
-# Use region from defaults (.env/Settings) — no -r flag provided
-.\ytminer.exe -k "ai tools" -a growth
+# Trend validation workflow
+.\ytminer.exe -k "sustainable living" -l quick -a velocity
+.\ytminer.exe -k "sustainable living" -l deep -a growth
 
-# Override defaults: set region explicitly to BR
-.\ytminer.exe -k "ai tools" -a growth -r BR
-```
+# Competitive intelligence workflow
+.\ytminer.exe -k "crypto education" -l balanced -a intel
+.\ytminer.exe -t 90d -l deep -a executive
 
-### Quick demo: all analyses with quick level
-```bash
-.\ytminer.exe -k "ai tools" -l quick -a all -t 7d
+# Content strategy research
+.\ytminer.exe -k "fitness motivation" -d any -o relevance -l deep -a growth
 ```
 
 ---
@@ -240,7 +228,7 @@ Welcome to YTMiner!
 | `-d, --duration` | Video length (short, medium, long, any) | `-d short` |
 | `-a, --analysis` | Analysis type | `-a growth` |
 | `-l, --level` | Analysis level (quick, balanced, deep) | `-l balanced` |
-| `-t, --time` | Time range (any, 7d, 30d, 90d, 1y) | `-t 30d` |
+| `-t, --time` | Time range (any, 1h, 24h, 7d, 30d, 90d, 180d, 1y) | `-t 30d` |
 | `-o, --order` | Search order (`relevance`, `date`, `viewCount`, `rating`, `title`) | `-o viewCount` |
 | `--no-preview` | Skip preview and run analysis directly | `--no-preview` |
 | `--help` | Show help message | `--help` |
@@ -256,89 +244,23 @@ For methodology details, see `docs/METRICS.md`.
 
 ## Sample Output
 
-### Growth Pattern Analysis
-```
-📈 Growth Pattern Analysis
-
-Total Videos (N=50)
-Average Views: 250.4K
-Average Likes: 12.1K
-🚀 Niche Velocity Score (Avg. VPD): 1.9K
-
-⚡ Highest Velocity Videos (Trending Now)
-┌─────────────────────────────────┬─────────────┬─────────┬─────────┬────────────┐
-│ Title                           │ Channel     │ Views   │ VPD     │ Engagement │
-├─────────────────────────────────┼─────────────┼─────────┼─────────┼────────────┤
-│ New AI Tool Changes Everything  │ TechGuru    │ 55K     │ 27.5K   │ 4.20%      │
-│ My 2025 Productivity System     │ ProductPro  │ 150K    │ 10.0K   │ 3.85%      │
-│ Is This The End of Photoshop?   │ DesignMaster│ 90K     │ 7.5K    │ 5.12%      │
-└─────────────────────────────────┴─────────────┴─────────┴─────────┴────────────┘
-
-💡 Insights
-• Good niche velocity - positive momentum detected
-• Excellent engagement rate
+A minimal preview of what you get:
+```text
+Title | Channel | Views | VPD | Uploaded
+Example Video | ExampleChannel | 120,345 | 2,345/day | 2025-09-14
 ```
 
-### Executive Report Preview
-```
-💼 Executive Report
-
-📋 Executive Summary
-Analysis of 200 videos shows Niche Velocity Score of 2.1K VPD with 450K average views. 
-Top channel 'ProductivityGuru' leads with 12.5% market share. 3 rising star channel(s) detected with high velocity.
-
-💡 Key Insights
-• Average views: 450K
-• Niche Velocity Score: 2.1K VPD
-• Top trending keyword: 'ai-integration' (3.2K VPD)
-• Rising stars detected: 3 channels
-
-🎯 Strategic Recommendations
-• Target breakout keyword: 'ai-integration' (3.2K VPD)
-• Study rising star channel 'ModernWorker' for momentum strategies
-• Post at 14:00 for maximum engagement
-
-🏢 Competitive Intelligence
-• Top competitor: ProductivityGuru (https://www.youtube.com/channel/UCxxxxxxx)
-• Rising stars detected: 3 channels
-• ⭐ Rising Star #1: ModernWorker (VPD: 3.2K) - https://www.youtube.com/channel/UCyyyyyyy
-• ⭐ Rising Star #2: TechFlow (VPD: 2.8K) - https://www.youtube.com/channel/UCzzzzzzz
-• ⭐ Rising Star #3: ProductivityHacks (VPD: 2.5K) - https://www.youtube.com/channel/UCaaaaaaa
-```
-
----
-
-## Configuration
-
-Create a `.env` file with your YouTube API key:
-
-```bash
-# Required
-YOUTUBE_API_KEY=your_youtube_api_key_here
-
-# Optional settings
-YTMINER_DEFAULT_REGION=any
-YTMINER_DEFAULT_DURATION=any
-YTMINER_DEFAULT_TIME_RANGE=any
-YTMINER_DEFAULT_ORDER=relevance
-
-# Velocity/Keyword thresholds (optional)
-# Rising Star: channel AvgVPD > (multiplier * niche AvgVPD)
-YTMINER_RISING_STAR_MULTIPLIER=1.5
-# Long Tail: keyword Frequency <= max_freq AND Avg Engagement > min_engagement (%)
-YTMINER_LONG_TAIL_MIN_ENGAGEMENT=5.0
-YTMINER_LONG_TAIL_MAX_FREQ=2
-```
-
-- Changes made in the in-app **Settings** are saved back to `.env` and become the new defaults for future runs.
+For more detailed examples, see `docs/examples.md`.
 
 ---
 
 ## Limitations
 
-- **API Quota**: 10,000 units per day (free tier)
-- **Search Results**: 50 videos per individual search (controlled by analysis level)
-- **Data**: Some videos may have limited public stats
+- **API Quotas**: Each analysis level uses different amounts of YouTube API quota
+- **Rate Limits**: YouTube API has rate limiting; tool includes automatic retry logic
+- **Search Scope**: Limited to publicly available YouTube videos
+- **Data Freshness**: Statistics reflect YouTube's caching and may have slight delays
+- **Adaptive Results**: Video count depends on content availability for your specific criteria
 
 ## Contributing
 
