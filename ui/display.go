@@ -311,18 +311,6 @@ func DisplayCompetitorAnalysis(competitors analysis.CompetitorAnalysis) {
 
 		table.Render()
 		fmt.Println()
-		
-		// Detailed Rising Stars list with direct links
-		fmt.Println(headerStyle.Render("🔗 Rising Stars - Direct Links"))
-		for i, channel := range competitors.RisingStars {
-			fmt.Println(infoStyle.Render(fmt.Sprintf("%d. %s", i+1, channel.Channel)))
-			fmt.Println(infoStyle.Render(fmt.Sprintf("   🚀 VPD: %s | 📺 Videos: %d | 👁️ Avg Views: %s", 
-				utils.FormatVPD(channel.AvgVPD), 
-				channel.VideoCount, 
-				utils.FormatNumber(channel.AvgViews))))
-			fmt.Println(infoStyle.Render(fmt.Sprintf("   🔗 %s", channel.ChannelURL)))
-			fmt.Println()
-		}
 	}
 
 	// Market Share
