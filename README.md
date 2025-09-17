@@ -199,17 +199,33 @@ Welcome to YTMiner!
 # Linux/Mac
 ./ytminer.exe -k "marketing strategies" -l balanced -a executive -o date
 
-# Competitor intelligence
+# Competitor intelligence (run analyses separately)
 # Windows
-.\ytminer.exe -k "your brand" -l balanced -a competitors -a keywords -o relevance
+.\ytminer.exe -k "your brand" -l balanced -a competitors -o relevance
+.\ytminer.exe -k "your brand" -l balanced -a keywords -o relevance
 # Linux/Mac
-./ytminer.exe -k "your brand" -l balanced -a competitors -a keywords -o relevance
+./ytminer.exe -k "your brand" -l balanced -a competitors -o relevance
+./ytminer.exe -k "your brand" -l balanced -a keywords -o relevance
 
 # Trend analysis
 # Windows
 .\ytminer.exe -k "trending topic" -l quick -a growth -o viewCount
 # Linux/Mac
 ./ytminer.exe -k "trending topic" -l quick -a growth -o viewCount
+```
+
+### Region and defaults
+```bash
+# Use region from defaults (.env/Settings) — no -r flag provided
+.\ytminer.exe -k "ai tools" -a growth
+
+# Override defaults: set region explicitly to BR
+.\ytminer.exe -k "ai tools" -a growth -r BR
+```
+
+### Quick demo: all analyses with quick level
+```bash
+.\ytminer.exe -k "ai tools" -l quick -a all -t 7d
 ```
 
 ---
@@ -229,6 +245,10 @@ Welcome to YTMiner!
 | `--no-preview` | Skip preview and run analysis directly | `--no-preview` |
 | `--help` | Show help message | `--help` |
 | `--version` | Show version information | `--version` |
+
+Note:
+- Flags override defaults loaded from `.env`/Settings for that run.
+- For `relevance`/`rating`, ordering follows YouTube API; `viewCount`/`date`/`title` are explicitly sorted in the preview table.
 
 For methodology details, see `docs/METRICS.md`.
 
@@ -309,6 +329,8 @@ YTMINER_RISING_STAR_MULTIPLIER=1.5
 YTMINER_LONG_TAIL_MIN_ENGAGEMENT=5.0
 YTMINER_LONG_TAIL_MAX_FREQ=2
 ```
+
+- Changes made in the in-app **Settings** are saved back to `.env` and become the new defaults for future runs.
 
 ---
 
