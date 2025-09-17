@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 	"sort"
-	"time"
 	"strconv"
+	"time"
 
 	"ytminer/analysis"
 	"ytminer/config"
@@ -21,7 +21,6 @@ import (
 
 var globalAppConfig *config.AppConfig
 
-
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
@@ -34,16 +33,16 @@ func main() {
 
 	// Parse command line flags
 	var (
-		keyword     = flag.String("k", "", "Search keyword")
-		region      = flag.String("r", appConfig.DefaultRegion, "Search region (any, BR, US, GB)")
-		duration    = flag.String("d", appConfig.DefaultDuration, "Video duration (any, short, medium, long)")
-		analysis    = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
-		level       = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
-		timeRange   = flag.String("t", appConfig.DefaultTimeRange, "Time range (any, 7d, 30d, 90d, 1y)")
-		order      = flag.String("o", appConfig.DefaultOrder, "Search order (relevance, date, viewCount, rating, title)")
-		noPreview   = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
-		help        = flag.Bool("help", false, "Show help")
-		version     = flag.Bool("version", false, "Show version")
+		keyword   = flag.String("k", "", "Search keyword")
+		region    = flag.String("r", appConfig.DefaultRegion, "Search region (any, BR, US, GB)")
+		duration  = flag.String("d", appConfig.DefaultDuration, "Video duration (any, short, medium, long)")
+		analysis  = flag.String("a", "", "Analysis type (growth, titles, competitors, temporal, keywords, executive, all)")
+		level     = flag.String("l", "balanced", "Analysis level (quick, balanced, deep)")
+		timeRange = flag.String("t", appConfig.DefaultTimeRange, "Time range (any, 7d, 30d, 90d, 1y)")
+		order     = flag.String("o", appConfig.DefaultOrder, "Search order (relevance, date, viewCount, rating, title)")
+		noPreview = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
+		help      = flag.Bool("help", false, "Show help")
+		version   = flag.Bool("version", false, "Show version")
 	)
 	flag.Parse()
 
@@ -123,13 +122,13 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange, or
 
 	// Parse analysis level
 	analysisLevel := parseAnalysisLevel(level)
-	
+
 	// Parse time range
 	publishedAfter, publishedBefore := parseTimeRange(timeRange)
-	
+
 	// Search videos with loading
 	fmt.Printf("Searching for: %s (Level: %s, Time: %s, Region: %s, Duration: %s, Order: %s)\n", keyword, level, timeRange, region, duration, order)
-	
+
 	scrollOpts := youtube.SearchOptions{
 		Query:           keyword,
 		MaxResults:      50, // Fixed at 50 per search (controlled by level)
@@ -144,10 +143,10 @@ func runCLIMode(keyword string, region, duration, analysis, level, timeRange, or
 	// Show loading while searching
 	loadingMessage := getLoadingMessage(analysisLevel)
 	stopLoading := utils.ShowLoading(loadingMessage)
-	
+
 	videos, err := client.SearchVideos(scrollOpts)
 	stopLoading()
-	
+
 	if err != nil {
 		utils.HandleError(err, "Failed to search videos")
 		return
@@ -234,51 +233,51 @@ func showSearchForm() {
 			huh.NewSelect[string]().
 				Title("🌍 Region").
 				Description("Search region").
+				Value(&region).
 				Options(
-					huh.NewOption("Any", "any"),
-					huh.NewOption("Brazil", "BR"),
-					huh.NewOption("United States", "US"),
-					huh.NewOption("United Kingdom", "GB"),
-				).
-				Value(&region),
+					huh.NewOption("Any", "any").Selected(region == "any"),
+					huh.NewOption("Brazil", "BR").Selected(region == "BR"),
+					huh.NewOption("United States", "US").Selected(region == "US"),
+					huh.NewOption("United Kingdom", "GB").Selected(region == "GB"),
+				),
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("⏱️ Duration").
 				Description("Video duration filter").
+				Value(&duration).
 				Options(
-					huh.NewOption("Any", "any"),
-					huh.NewOption("Short (< 4min)", "short"),
-					huh.NewOption("Medium (4-20min)", "medium"),
-					huh.NewOption("Long (> 20min)", "long"),
-				).
-				Value(&duration),
+					huh.NewOption("Any", "any").Selected(duration == "any"),
+					huh.NewOption("Short (< 4min)", "short").Selected(duration == "short"),
+					huh.NewOption("Medium (4-20min)", "medium").Selected(duration == "medium"),
+					huh.NewOption("Long (> 20min)", "long").Selected(duration == "long"),
+				),
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("📅 Time Range").
 				Description("When were the videos published?").
+				Value(&timeRange).
 				Options(
-					huh.NewOption("Any time", "any"),
-					huh.NewOption("Last 7 days", "7d"),
-					huh.NewOption("Last 30 days", "30d"),
-					huh.NewOption("Last 90 days", "90d"),
-					huh.NewOption("Last year", "1y"),
-				).
-				Value(&timeRange),
+					huh.NewOption("Any time", "any").Selected(timeRange == "any"),
+					huh.NewOption("Last 7 days", "7d").Selected(timeRange == "7d"),
+					huh.NewOption("Last 30 days", "30d").Selected(timeRange == "30d"),
+					huh.NewOption("Last 90 days", "90d").Selected(timeRange == "90d"),
+					huh.NewOption("Last year", "1y").Selected(timeRange == "1y"),
+				),
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title("🗂️ Order").
 				Description("Search results order").
+				Value(&order).
 				Options(
-					huh.NewOption("Relevance", "relevance"),
-					huh.NewOption("Most Recent", "date"),
-					huh.NewOption("Most Viewed", "viewCount"),
-					huh.NewOption("Rating", "rating"),
-					huh.NewOption("Title (A-Z)", "title"),
-				).
-				Value(&order),
+					huh.NewOption("Relevance", "relevance").Selected(order == "relevance"),
+					huh.NewOption("Most Recent", "date").Selected(order == "date"),
+					huh.NewOption("Most Viewed", "viewCount").Selected(order == "viewCount"),
+					huh.NewOption("Rating", "rating").Selected(order == "rating"),
+					huh.NewOption("Title (A-Z)", "title").Selected(order == "title"),
+				),
 		),
 		huh.NewGroup(
 			huh.NewSelect[string]().
@@ -305,7 +304,7 @@ func showSearchForm() {
 
 	// Parse analysis level
 	analysisLevel := parseAnalysisLevel(level)
-	
+
 	// Parse time range
 	publishedAfter, publishedBefore := parseTimeRange(timeRange)
 
@@ -318,7 +317,7 @@ func showSearchForm() {
 
 	// Search videos with loading
 	ui.DisplayInfo("🔍 Searching for: " + keyword + " (Level: " + level + ", Time: " + timeRange + ", Region: " + region + ", Duration: " + duration + ", Order: " + order + ")")
-	
+
 	searchOpts := youtube.SearchOptions{
 		Query:           keyword,
 		MaxResults:      50, // Fixed at 50 per search (controlled by level)
@@ -333,10 +332,10 @@ func showSearchForm() {
 	// Show loading while searching
 	loadingMessage := getLoadingMessage(analysisLevel)
 	stopLoading := utils.ShowLoading(loadingMessage)
-	
+
 	videos, err := client.SearchVideos(searchOpts)
 	stopLoading()
-	
+
 	if err != nil {
 		utils.HandleError(err, "Failed to search videos")
 		showMainMenu()
@@ -358,7 +357,9 @@ func showSearchForm() {
 					Value(&analyze),
 			),
 		)
-		if err := analyzeForm.Run(); err != nil { log.Fatal(err) }
+		if err := analyzeForm.Run(); err != nil {
+			log.Fatal(err)
+		}
 		if analyze {
 			runAnalysis(videos, "")
 		} else {
@@ -443,32 +444,32 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 	case "all":
 		// Run all analyses with loading
 		ui.DisplayInfo("Running comprehensive analysis...")
-		
+
 		stopLoading := utils.ShowLoading("📈 Analyzing growth patterns...")
 		growth := analyzer.AnalyzeGrowthPatterns()
 		stopLoading()
 		ui.DisplayGrowthAnalysis(growth)
-		
+
 		stopLoading = utils.ShowLoading("📝 Analyzing title patterns...")
 		titles := analyzer.AnalyzeTitles()
 		stopLoading()
 		ui.DisplayTitleAnalysis(titles)
-		
+
 		stopLoading = utils.ShowLoading("🏢 Analyzing competitors...")
 		competitors := analyzer.AnalyzeCompetitors()
 		stopLoading()
 		ui.DisplayCompetitorAnalysis(competitors)
-		
+
 		stopLoading = utils.ShowLoading("⏰ Analyzing temporal patterns...")
 		temporal := analyzer.AnalyzeTemporal()
 		stopLoading()
 		ui.DisplayTemporalAnalysis(temporal)
-		
+
 		stopLoading = utils.ShowLoading("🔍 Analyzing keywords...")
 		keywords := analyzer.AnalyzeKeywords()
 		stopLoading()
 		ui.DisplayKeywordAnalysis(keywords)
-		
+
 		stopLoading = utils.ShowLoading("💼 Generating executive report...")
 		report := analyzer.GenerateExecutiveReport()
 		stopLoading()
@@ -527,13 +528,13 @@ func showSettingsForm() {
 			huh.NewSelect[string]().
 				Title("🌍 Default Region").
 				Description("Default search region").
+				Value(&defaultRegion).
 				Options(
-					huh.NewOption("Any", "any"),
-					huh.NewOption("Brazil", "BR"),
-					huh.NewOption("United States", "US"),
-					huh.NewOption("United Kingdom", "GB"),
-				).
-				Value(&defaultRegion),
+					huh.NewOption("Any", "any").Selected(defaultRegion == "any"),
+					huh.NewOption("Brazil", "BR").Selected(defaultRegion == "BR"),
+					huh.NewOption("United States", "US").Selected(defaultRegion == "US"),
+					huh.NewOption("United Kingdom", "GB").Selected(defaultRegion == "GB"),
+				),
 		),
 
 		// Step 3: Default Duration
@@ -541,13 +542,13 @@ func showSettingsForm() {
 			huh.NewSelect[string]().
 				Title("⏱️ Default Duration").
 				Description("Default video duration filter").
+				Value(&defaultDuration).
 				Options(
-					huh.NewOption("Any", "any"),
-					huh.NewOption("Short (< 4min)", "short"),
-					huh.NewOption("Medium (4-20min)", "medium"),
-					huh.NewOption("Long (> 20min)", "long"),
-				).
-				Value(&defaultDuration),
+					huh.NewOption("Any", "any").Selected(defaultDuration == "any"),
+					huh.NewOption("Short (< 4min)", "short").Selected(defaultDuration == "short"),
+					huh.NewOption("Medium (4-20min)", "medium").Selected(defaultDuration == "medium"),
+					huh.NewOption("Long (> 20min)", "long").Selected(defaultDuration == "long"),
+				),
 		),
 
 		// Step 4: Default Time Range
@@ -555,14 +556,14 @@ func showSettingsForm() {
 			huh.NewSelect[string]().
 				Title("📅 Default Time Range").
 				Description("Default published time filter").
+				Value(&defaultTimeRange).
 				Options(
-					huh.NewOption("Any time", "any"),
-					huh.NewOption("Last 7 days", "7d"),
-					huh.NewOption("Last 30 days", "30d"),
-					huh.NewOption("Last 90 days", "90d"),
-					huh.NewOption("Last year", "1y"),
-				).
-				Value(&defaultTimeRange),
+					huh.NewOption("Any time", "any").Selected(defaultTimeRange == "any"),
+					huh.NewOption("Last 7 days", "7d").Selected(defaultTimeRange == "7d"),
+					huh.NewOption("Last 30 days", "30d").Selected(defaultTimeRange == "30d"),
+					huh.NewOption("Last 90 days", "90d").Selected(defaultTimeRange == "90d"),
+					huh.NewOption("Last year", "1y").Selected(defaultTimeRange == "1y"),
+				),
 		),
 
 		// Step 5: Default Order
@@ -570,14 +571,14 @@ func showSettingsForm() {
 			huh.NewSelect[string]().
 				Title("🗂️ Default Order").
 				Description("Default search results order").
+				Value(&defaultOrder).
 				Options(
-					huh.NewOption("Relevance", "relevance"),
-					huh.NewOption("Most Recent", "date"),
-					huh.NewOption("Most Viewed", "viewCount"),
-					huh.NewOption("Rating", "rating"),
-					huh.NewOption("Title (A-Z)", "title"),
-				).
-				Value(&defaultOrder),
+					huh.NewOption("Relevance", "relevance").Selected(defaultOrder == "relevance"),
+					huh.NewOption("Most Recent", "date").Selected(defaultOrder == "date"),
+					huh.NewOption("Most Viewed", "viewCount").Selected(defaultOrder == "viewCount"),
+					huh.NewOption("Rating", "rating").Selected(defaultOrder == "rating"),
+					huh.NewOption("Title (A-Z)", "title").Selected(defaultOrder == "title"),
+				),
 		),
 
 		// Step 6: Velocity/Keyword Thresholds
@@ -610,14 +611,14 @@ func showSettingsForm() {
 
 	// Build config with possibly updated values
 	cfg := &config.AppConfig{
-		APIKey:                 apiKey,
-		DefaultRegion:          defaultRegion,
-		DefaultDuration:        defaultDuration,
-		DefaultTimeRange:       defaultTimeRange,
-		DefaultOrder:           defaultOrder,
-		RisingStarMultiplier:   current.RisingStarMultiplier,
-		LongTailMinEngagement:  current.LongTailMinEngagement,
-		LongTailMaxFreq:        current.LongTailMaxFreq,
+		APIKey:                apiKey,
+		DefaultRegion:         defaultRegion,
+		DefaultDuration:       defaultDuration,
+		DefaultTimeRange:      defaultTimeRange,
+		DefaultOrder:          defaultOrder,
+		RisingStarMultiplier:  current.RisingStarMultiplier,
+		LongTailMinEngagement: current.LongTailMinEngagement,
+		LongTailMaxFreq:       current.LongTailMaxFreq,
 	}
 
 	// Parse thresholds (keep current on parse error)
@@ -669,7 +670,7 @@ func getLoadingMessage(level youtube.AnalysisLevel) string {
 
 func parseTimeRange(timeRange string) (string, string) {
 	now := time.Now()
-	
+
 	switch timeRange {
 	case "7d":
 		sevenDaysAgo := now.AddDate(0, 0, -7)
@@ -687,4 +688,3 @@ func parseTimeRange(timeRange string) (string, string) {
 		return "", ""
 	}
 }
-
