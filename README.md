@@ -242,18 +242,6 @@ For methodology details, see `docs/METRICS.md`.
 
 ---
 
-## Sample Output
-
-A minimal preview of what you get:
-```text
-Title | Channel | Views | VPD | Uploaded
-Example Video | ExampleChannel | 120,345 | 2,345/day | 2025-09-14
-```
-
-For more detailed examples, see `docs/examples.md`.
-
----
-
 ## Limitations
 
 - **API Quotas**: Each analysis level uses different amounts of YouTube API quota
