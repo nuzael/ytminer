@@ -15,7 +15,7 @@ func FormatNumber(num interface{}) string {
 	default:
 		return fmt.Sprintf("%v", num)
 	}
-	
+
 	if f >= 1000000 {
 		return fmt.Sprintf("%.1fM", f/1000000)
 	} else if f >= 1000 {

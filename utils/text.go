@@ -42,13 +42,19 @@ func NormalizeText(s string) string {
 // Tokenize splits text into words removing stopwords and short tokens
 func Tokenize(s string) []string {
 	n := NormalizeText(s)
-	if n == "" { return nil }
+	if n == "" {
+		return nil
+	}
 	parts := strings.Fields(n)
 	out := make([]string, 0, len(parts))
 	for _, p := range parts {
-		if _, ok := stopwords[p]; ok { continue }
-		if utf8.RuneCountInString(p) < 3 { continue }
+		if _, ok := stopwords[p]; ok {
+			continue
+		}
+		if utf8.RuneCountInString(p) < 3 {
+			continue
+		}
 		out = append(out, p)
 	}
 	return out
-} 
+}

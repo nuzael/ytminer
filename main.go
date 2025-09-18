@@ -381,7 +381,7 @@ func showSearchForm() {
 		ui.DisplayInfo("Attempting to fetch transcripts...")
 		ui.DisplayWarning("Note: Transcript fetching may be limited due to YouTube restrictions")
 		ui.DisplayInfo("If transcripts fail, analysis will continue without them")
-		
+
 		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		fetched := 0

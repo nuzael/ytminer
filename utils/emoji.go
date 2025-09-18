@@ -72,4 +72,4 @@ func ExtractEmojis(s string) []string {
 		}
 	}
 	return result
-} 
+}
