@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download modules
+        run: go mod download
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Check formatting (gofmt)
+        run: |
+          fmtout=$(gofmt -s -l .)
+          if [ -n "$fmtout" ]; then
+            echo "Files not formatted:" >&2
+            echo "$fmtout" >&2
+            exit 1
+          fi
+
+      - name: Test with race detector and coverage
+        run: |
+          go test ./... -race -coverprofile=coverage.out -covermode=atomic -v
+
+      - name: Enforce minimum coverage (80%)
+        run: |
+          total=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${total}%"
+          awk -v t=$total 'BEGIN { if (t+0 < 80) exit 1 }'
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out 

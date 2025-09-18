@@ -135,6 +135,20 @@ The `order` parameter serves two important functions:
 
 ---
 
+## Architecture Overview
+
+- Domain (pure):
+  - `domain/metrics`: core metrics functions (VPD, like_rate, freshness, saturation)
+  - `domain/score`: Opportunity Score computation (pure, deterministic)
+- Platform (adapters):
+  - `platform/ytapi`: port/adapter wrapping `youtube.Client` (search, transcripts)
+- App/Analysis:
+  - `analysis`: orchestrates analyses using domain and platform
+- UI:
+  - `ui`: rendering only, no business logic
+- Config:
+  - `config`: defaults and env overrides (including Opportunity weights)
+
 ## Installation
 
 ### 1. Get a YouTube API Key
@@ -274,3 +288,22 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - **Issues**: Report bugs and feature requests on GitHub
 - **Documentation**: Check this README for detailed usage
+
+## Continuous Integration (CI)
+
+This repository includes a GitHub Actions workflow that runs on pushes and PRs to `main`:
+- `go vet`, formatting check (`gofmt -s`)
+- `go test ./... -race` with coverage report (`coverage.out`)
+- Enforces a minimum coverage of 80%
+- Uploads `coverage.out` as an artifact
+
+### Run tests with coverage locally
+
+```bash
+# From repository root
+go test ./... -coverprofile=coverage.out -covermode=atomic
+
+go tool cover -func=coverage.out   # summary on console
+
+go tool cover -html=coverage.out -o coverage.html  # open in the browser
+```
