@@ -22,6 +22,7 @@ type AppConfig struct {
 	OppWeightLike   float64
 	OppWeightFresh  float64
 	OppWeightSatPen float64
+	OppWeightSlope  float64
 }
 
 // LoadConfig loads configuration from environment
@@ -38,6 +39,7 @@ func LoadConfig() *AppConfig {
 		OppWeightLike:         0.25,
 		OppWeightFresh:        0.20,
 		OppWeightSatPen:       0.30,
+		OppWeightSlope:        0.15,
 	}
 
 	// Load configuration from environment
@@ -96,6 +98,11 @@ func LoadConfig() *AppConfig {
 			config.OppWeightSatPen = f
 		}
 	}
+	if v := strings.TrimSpace(os.Getenv("YTMINER_OPP_W_SLOPE")); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil && f >= 0 {
+			config.OppWeightSlope = f
+		}
+	}
 
 	config.APIKey = strings.TrimSpace(os.Getenv("YOUTUBE_API_KEY"))
 
@@ -123,6 +130,7 @@ func (c *AppConfig) SaveConfig() error {
 	envContent += "YTMINER_OPP_W_LIKE=" + strconv.FormatFloat(c.OppWeightLike, 'f', -1, 64) + "\n"
 	envContent += "YTMINER_OPP_W_FRESH=" + strconv.FormatFloat(c.OppWeightFresh, 'f', -1, 64) + "\n"
 	envContent += "YTMINER_OPP_W_SAT=" + strconv.FormatFloat(c.OppWeightSatPen, 'f', -1, 64) + "\n"
+	envContent += "YTMINER_OPP_W_SLOPE=" + strconv.FormatFloat(c.OppWeightSlope, 'f', -1, 64) + "\n"
 
 	return os.WriteFile(".env", []byte(envContent), 0644)
 }

@@ -51,7 +51,8 @@ ytminer -k "content marketing" -o date -l deep -a executive
 - Breakout keywords by Avg. VPD
 - Core keywords by frequency
 
-### Transcript-Aware Topic Insights (new)
+### Transcript-Aware Topic Insights (Limited)
+- ⚠️ **Limited availability**: Transcript fetching may be blocked by YouTube restrictions
 - Optional transcript fetching for public videos (timedtext); language preference via `YTMINER_TRANSCRIPT_LANGS`
 - Enriches keyword/topic analysis and future clustering (title + description + transcript)
 - Auto-generated captions may be used when manual captions are not available

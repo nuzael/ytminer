@@ -8,6 +8,7 @@ import (
 
 	"math"
 	"ytminer/config"
+	"ytminer/domain/score"
 	"ytminer/utils"
 	"ytminer/youtube"
 )
@@ -581,139 +582,35 @@ func (a *Analyzer) GenerateExecutiveReport() ExecutiveReport {
 	}
 }
 
-// AnalyzeOpportunityScore computes a lightweight in-memory ranking combining
-// velocity (VPD), engagement (like_rate), freshness, and a simple saturation penalty.
+// AnalyzeOpportunityScore now delegates to domain/score (pure core)
 func (a *Analyzer) AnalyzeOpportunityScore() []OpportunityItem {
 	if len(a.videos) == 0 {
 		return []OpportunityItem{}
 	}
-
-	// Precompute features
-	now := time.Now()
-	vpdVals := make([]float64, 0, len(a.videos))
-	likeRateVals := make([]float64, 0, len(a.videos))
-	ageVals := make([]float64, 0, len(a.videos))
-
-	// Simple saturation: frequency of primary tokens (from title)
-	tokenFreq := make(map[string]int)
-	videoPrimaryToken := make([]string, len(a.videos))
-	for i, v := range a.videos {
-		// VPD
-		vpdVals = append(vpdVals, v.VPD)
-		// Like rate (likes per 1k views)
-		likeRate := 0.0
-		if v.Views > 0 {
-			likeRate = (float64(v.Likes) / float64(v.Views)) * 1000.0
-		}
-		likeRateVals = append(likeRateVals, likeRate)
-		// Age in days
-		ageDays := int(now.Sub(v.PublishedAt).Hours() / 24)
-		if ageDays < 0 {
-			ageDays = 0
-		}
-		ageVals = append(ageVals, float64(ageDays))
-
-		// Primary token: first non-stopword token of title
-		toks := utils.Tokenize(v.Title)
-		primary := ""
-		for _, t := range toks {
-			if t == "" {
-				continue
-			}
-			primary = t
-			break
-		}
-		if primary == "" {
-			primary = "_na_"
-		}
-		videoPrimaryToken[i] = primary
-		tokenFreq[primary]++
+	w := score.Weights{
+		VPD:   a.cfg.OppWeightVPD,
+		Like:  a.cfg.OppWeightLike,
+		Fresh: a.cfg.OppWeightFresh,
+		Sat:   a.cfg.OppWeightSatPen,
+		Slope: a.cfg.OppWeightSlope,
 	}
+	items := score.Compute(a.videos, w, time.Now())
 
-	// Helpers: z-score and min-max freshness
-	z := func(vals []float64, x float64) float64 {
-		if len(vals) == 0 {
-			return 0
-		}
-		m := mean(vals)
-		sd := stddev(vals, m)
-		if sd == 0 {
-			return 0
-		}
-		return (x - m) / sd
-	}
-	minMax := func(vals []float64, x float64, invert bool) float64 {
-		if len(vals) == 0 {
-			return 0
-		}
-		minV, maxV := vals[0], vals[0]
-		for _, v := range vals {
-			if v < minV {
-				minV = v
-			}
-			if v > maxV {
-				maxV = v
-			}
-		}
-		if maxV == minV {
-			return 0
-		}
-		norm := (x - minV) / (maxV - minV)
-		if invert {
-			return 1.0 - norm
-		}
-		return norm
-	}
-
-	items := make([]OpportunityItem, 0, len(a.videos))
-	for i, v := range a.videos {
-		likeRate := 0.0
-		if v.Views > 0 {
-			likeRate = (float64(v.Likes) / float64(v.Views)) * 1000.0
-		}
-		ageDays := int(now.Sub(v.PublishedAt).Hours() / 24)
-		if ageDays < 0 {
-			ageDays = 0
-		}
-		freshness := minMax(ageVals, float64(ageDays), true) // younger -> closer to 1
-		// Saturation: normalized frequency of primary token
-		freq := float64(tokenFreq[videoPrimaryToken[i]])
-		// normalize by sample size
-		saturation := freq / float64(len(a.videos))
-
-		// Weights (could become config)
-		wVPD := a.cfg.OppWeightVPD
-		wLike := a.cfg.OppWeightLike
-		wFresh := a.cfg.OppWeightFresh
-		wSat := a.cfg.OppWeightSatPen // penalty weight
-
-		score := wVPD*z(vpdVals, v.VPD) + wLike*z(likeRateVals, likeRate) + wFresh*freshness - wSat*saturation
-
-		reasons := []string{
-			fmt.Sprintf("VPD=%s", utils.FormatVPD(v.VPD)),
-			fmt.Sprintf("LikeRate=%.2f/1k", likeRate),
-			fmt.Sprintf("Age=%dd", ageDays),
-			fmt.Sprintf("Saturation=%.2f", saturation),
-		}
-
-		items = append(items, OpportunityItem{
-			Title:      v.Title,
-			Channel:    v.Channel,
-			URL:        v.URL,
-			Score:      score,
-			VPD:        v.VPD,
-			LikeRate:   likeRate,
-			AgeDays:    ageDays,
-			Saturation: saturation,
-			Reasons:    reasons,
+	out := make([]OpportunityItem, 0, len(items))
+	for _, it := range items {
+		out = append(out, OpportunityItem{
+			Title:      it.Title,
+			Channel:    it.Channel,
+			URL:        it.URL,
+			Score:      it.Score,
+			VPD:        it.VPD,
+			LikeRate:   it.LikeRate,
+			AgeDays:    it.AgeDays,
+			Saturation: it.Saturation,
+			Reasons:    it.Reasons,
 		})
 	}
-
-	sort.Slice(items, func(i, j int) bool { return items[i].Score > items[j].Score })
-	if len(items) > 20 {
-		items = items[:20]
-	}
-	return items
+	return out
 }
 
 func mean(vals []float64) float64 {
