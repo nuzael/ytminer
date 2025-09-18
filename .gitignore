@@ -52,3 +52,20 @@ output/
 .venv/
 venv/
 env/
+
+# Go coverage files
+coverage.out
+coverage.html
+*.prof
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace file
+go.work
