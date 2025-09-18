@@ -38,24 +38,7 @@ ytminer -k "content marketing" -o date -l deep -a executive
 ### Title Pattern Analysis (`-a titles`)
 - High-performing title patterns
 - Keywords, emojis, and length insights
-### Weight Profiles
-Predefined strategies to steer the Opportunity Score:
-- exploration: Discover new niches and emerging trends
-- evergreen: Focus on timeless, high-quality content
-- trending: Catch viral content and momentum
-- balanced: Default balanced approach
 
-Usage:
-```bash
-# List profiles
-./ytminer.exe --profiles
-
-# Apply profile in CLI
-./ytminer.exe -k "ai tools" -a opportunity --profile trending
-
-# Apply profile then run all
-./ytminer.exe -k "python tutorial" -a all --profile exploration
-```
 ### Competitor Analysis (`-a competitors`)
 - Rising Stars detection (VPD > niche baseline)
 - Channel velocity and market share
@@ -72,8 +55,10 @@ Usage:
 - Optional transcript fetching for public videos (timedtext); language preference via `YTMINER_TRANSCRIPT_LANGS`
 - Enriches keyword/topic analysis and future clustering (title + description + transcript)
 - Auto-generated captions may be used when manual captions are not available
+- Tip: set `YTMINER_CACHE_DIR` to control where transcript cache files are stored (useful for CI/dev isolation)
 
 ### Opportunity Score (`-a opportunity`) (Enhanced)
+Note: weights are not auto-normalized. You can sum > 1; the score is linear and components are standardized (z-scores) where applicable.
 - Ranks videos/themes by a combined signal: velocity (VPD), engagement (likes per 1k views), freshness (younger is better), minus saturation penalty
 - Runs entirely in-memory; configurable weights via env (`YTMINER_OPP_W_VPD`, `YTMINER_OPP_W_LIKE`, `YTMINER_OPP_W_FRESH`, `YTMINER_OPP_W_SAT`, `YTMINER_OPP_W_SLOPE`); transcripts (if enabled) enrich future topic grouping, not this score
 
