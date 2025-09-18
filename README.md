@@ -38,7 +38,24 @@ ytminer -k "content marketing" -o date -l deep -a executive
 ### Title Pattern Analysis (`-a titles`)
 - High-performing title patterns
 - Keywords, emojis, and length insights
+### Weight Profiles
+Predefined strategies to steer the Opportunity Score:
+- exploration: Discover new niches and emerging trends
+- evergreen: Focus on timeless, high-quality content
+- trending: Catch viral content and momentum
+- balanced: Default balanced approach
 
+Usage:
+```bash
+# List profiles
+./ytminer.exe --profiles
+
+# Apply profile in CLI
+./ytminer.exe -k "ai tools" -a opportunity --profile trending
+
+# Apply profile then run all
+./ytminer.exe -k "python tutorial" -a all --profile exploration
+```
 ### Competitor Analysis (`-a competitors`)
 - Rising Stars detection (VPD > niche baseline)
 - Channel velocity and market share

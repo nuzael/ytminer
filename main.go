@@ -44,6 +44,8 @@ func main() {
 		noPreview = flag.Bool("no-preview", false, "Skip preview table and run analysis directly")
 		help      = flag.Bool("help", false, "Show help")
 		version   = flag.Bool("version", false, "Show version")
+		profiles  = flag.Bool("profiles", false, "Show available weight profiles and exit")
+		profile   = flag.String("profile", "", "Apply predefined weight profile (exploration, evergreen, trending, balanced)")
 	)
 	flag.Parse()
 
@@ -57,6 +59,21 @@ func main() {
 	if *help {
 		showHelp()
 		return
+	}
+
+	// Show profiles and exit
+	if *profiles {
+		config.DisplayProfiles()
+		return
+	}
+
+	// Apply profile if provided
+	if *profile != "" {
+		if err := globalAppConfig.ApplyProfile(*profile); err != nil {
+			ui.DisplayError(fmt.Sprintf("failed to apply profile '%s': %v", *profile, err))
+			return
+		}
+		ui.DisplayInfo(fmt.Sprintf("Applied profile: %s", *profile))
 	}
 
 	// Show welcome message
@@ -90,6 +107,8 @@ func showHelp() {
 	fmt.Println("  --no-preview Skip preview table and run analysis directly")
 	fmt.Println("  --help       Show help")
 	fmt.Println("  --version    Show version")
+	fmt.Println("  --profiles   Show available weight profiles and exit")
+	fmt.Println("  --profile    Apply a predefined profile: exploration, evergreen, trending, balanced")
 	fmt.Println()
 	fmt.Println("ANALYSIS LEVELS:")
 	fmt.Println("  quick        Fast analysis (~300 units, up to ~150 videos, 30-60s)")
@@ -110,6 +129,8 @@ func showHelp() {
 	fmt.Println("  ytminer -k \"Python tutorial\" -l quick -t 7d")
 	fmt.Println("  ytminer -k \"Pokemon\" -r BR -d short -a growth -l balanced -t 30d")
 	fmt.Println("  ytminer -k \"Machine Learning\" -a executive -l deep -t 90d")
+	fmt.Println("  ytminer -k \"AI tools\" --profile trending -a opportunity")
+	fmt.Println("  ytminer --profiles")
 	fmt.Println()
 	fmt.Println("INTERACTIVE MODE:")
 	fmt.Println("  ytminer")
