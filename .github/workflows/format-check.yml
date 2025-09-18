@@ -1,0 +1,36 @@
+name: Format Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Format code
+        run: |
+          gofmt -s -w .
+          git diff --exit-code || (echo "Code formatting issues found. Please run 'gofmt -s -w .' locally and commit the changes." && exit 1)
+
+      - name: Check formatting
+        run: |
+          fmtout=$(gofmt -s -l .)
+          if [ -n "$fmtout" ]; then
+            echo "Files not formatted:" >&2
+            echo "$fmtout" >&2
+            exit 1
+          fi

@@ -24,12 +24,17 @@ jobs:
       - name: go vet
         run: go vet ./...
 
-      - name: Check formatting
+      - name: Format and check
         run: |
-          fmtout=$(gofmt -s -l .)
-          if [ -n "$fmtout" ]; then
-            echo "Files not formatted:" >&2
-            echo "$fmtout" >&2
+          # Format all Go files
+          gofmt -s -w .
+          
+          # Check if there are any uncommitted changes
+          if ! git diff --quiet; then
+            echo "Code formatting issues found. The following files need formatting:"
+            git diff --name-only
+            echo ""
+            echo "Please run 'gofmt -s -w .' locally and commit the changes."
             exit 1
           fi
 
