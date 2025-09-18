@@ -399,10 +399,10 @@ Transcript Data → Cache Storage → Future Requests
 - **Unit tests**: All domain functions
 - **Integration tests**: Critical workflows
 - **Golden tests**: Stable outputs
-- **Coverage**: 80%+ for critical paths
+- **Coverage**: Good test coverage for critical paths
 
 ### Performance Standards
 - **Response time**: <3 minutes for deep analysis
 - **Memory usage**: <100MB for typical analysis
 - **API efficiency**: Minimize quota usage
-- **Cache hit rate**: >80% for repeated analysis
+- **Cache hit rate**: High for repeated analysis

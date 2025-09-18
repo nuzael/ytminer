@@ -201,7 +201,7 @@ func VPD(views int64, publishedAt time.Time, now time.Time) float64 {
 - Test all domain functions
 - Use table-driven tests for multiple cases
 - Test edge cases and error conditions
-- Aim for 80%+ coverage on critical paths
+- Aim for good test coverage on critical paths
 
 ### Integration Tests
 - Test platform adapters
