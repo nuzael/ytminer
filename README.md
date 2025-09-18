@@ -56,9 +56,9 @@ ytminer -k "content marketing" -o date -l deep -a executive
 - Enriches keyword/topic analysis and future clustering (title + description + transcript)
 - Auto-generated captions may be used when manual captions are not available
 
-### Opportunity Score (`-a opportunity`)
+### Opportunity Score (`-a opportunity`) (Enhanced)
 - Ranks videos/themes by a combined signal: velocity (VPD), engagement (likes per 1k views), freshness (younger is better), minus saturation penalty
-- Runs entirely in-memory; configurable weights via env (`YTMINER_OPP_W_VPD`, `YTMINER_OPP_W_LIKE`, `YTMINER_OPP_W_FRESH`, `YTMINER_OPP_W_SAT`); transcripts (if enabled) enrich future topic grouping, not this score
+- Runs entirely in-memory; configurable weights via env (`YTMINER_OPP_W_VPD`, `YTMINER_OPP_W_LIKE`, `YTMINER_OPP_W_FRESH`, `YTMINER_OPP_W_SAT`, `YTMINER_OPP_W_SLOPE`); transcripts (if enabled) enrich future topic grouping, not this score
 
 ### Executive Reports (`-a executive`)
 - Summary of niche momentum and leaders

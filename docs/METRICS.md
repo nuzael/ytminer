@@ -24,6 +24,33 @@ The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total 
 - `days_since_publication` is the integer number of days from the video's publication date to today.
 - This metric is calculated for every video in the sample and used as a basis for most analyses.
 
+## Advanced Velocity Metrics: VPD7, VPD30, and Slope
+
+### VPD7 and VPD30 (Windowed Velocity)
+To better understand recent momentum vs. overall performance, we calculate velocity over specific time windows:
+
+- **VPD7** = `video.viewCount / min(7, days_since_publication)`
+- **VPD30** = `video.viewCount / min(30, days_since_publication)`
+
+These metrics approximate "recent velocity" by capping the denominator at 7 or 30 days respectively. This helps identify:
+- Videos that gained momentum recently (high VPD7 vs. VPD30)
+- Content that peaked early but has slowed down
+- Steady performers vs. viral spikes
+
+### Slope (Acceleration Indicator)
+The **Slope** metric compares short-term vs. long-term velocity to detect acceleration or deceleration:
+
+- **Slope** = `(VPD7 - VPD30) / max(VPD30, 1)`
+- Values are clamped to [-5, 5] to limit outliers
+- **Positive Slope**: Content is accelerating (recent momentum > overall momentum)
+- **Negative Slope**: Content is decelerating (recent momentum < overall momentum)
+- **Zero Slope**: Steady performance
+
+**Examples:**
+- Slope = 2.0: VPD7 is 3x higher than VPD30 (strong acceleration)
+- Slope = -0.5: VPD7 is 50% lower than VPD30 (deceleration)
+- Slope = 0.0: VPD7 equals VPD30 (steady state)
+
 ## Growth Pattern Analysis
 - **Niche Velocity Score (Avg. VPD)**: The primary health indicator of a niche.
   - `Avg. VPD = sum(all_video_VPDs) / N`
@@ -55,19 +82,38 @@ The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total 
   - Default: `Frequency <= YTMINER_LONG_TAIL_MAX_FREQ` (default 2) AND `Avg Engagement > YTMINER_LONG_TAIL_MIN_ENGAGEMENT` (default 5%).
   - Both are configurable via env.
 
-## Opportunity Score (Lightweight)
-The Opportunity Score is a simple, quota-friendly ranking computed in-memory over the current result set. It combines:
-- z(VPD)
-- z(Like rate per 1k views)
-- Freshness (min–max of age, inverted so newer videos score higher)
-- Saturation penalty (normalized frequency of the primary title token within the sample)
+## Opportunity Score (Enhanced)
+The Opportunity Score is a comprehensive ranking computed in-memory over the current result set. It combines multiple signals using z-score normalization:
 
-Formula (weights subject to change):
-- `score = 0.45*z(VPD) + 0.25*z(like_rate) + 0.20*freshness - 0.30*saturation`
+**Formula:**
+```
+score = w_vpd*z(VPD) + w_like*z(LikeRate) + w_fresh*Freshness - w_sat*Saturation + w_slope*z(Slope)
+```
 
-Notes:
+**Components:**
+- **z(VPD)**: Standardized velocity (views per day)
+- **z(LikeRate)**: Standardized engagement (likes per 1k views)
+- **Freshness**: Min-max normalized age (inverted: newer = higher score)
+- **Saturation**: Penalty based on primary keyword frequency in sample
+- **z(Slope)**: Standardized acceleration (VPD7 vs VPD30 comparison)
+
+**Default Weights (configurable via env):**
+- `YTMINER_OPP_W_VPD=0.45` (velocity)
+- `YTMINER_OPP_W_LIKE=0.25` (engagement)
+- `YTMINER_OPP_W_FRESH=0.20` (freshness)
+- `YTMINER_OPP_W_SAT=0.30` (saturation penalty)
+- `YTMINER_OPP_W_SLOPE=0.15` (acceleration)
+
+**Interpretation:**
+- Higher scores indicate better opportunities
+- Slope component rewards accelerating content
+- Saturation penalty reduces overused themes
+- All components are z-score normalized for fair comparison
+
+**Notes:**
 - No persistence required; operates on the sample collected for the current search.
 - Transcripts are not required; future versions may incorporate topic clustering.
+- Weights can be adjusted via environment variables or CLI flags.
 
 ## Engagement Analysis
 - **Engagement Rate**: `(Likes + Comments) / max(1, Views) * 100`
