@@ -5,6 +5,8 @@ A command-line tool for YouTube content creators, marketers, and researchers to 
 [![Go](https://img.shields.io/badge/Go-1.24+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![YouTube API](https://img.shields.io/badge/YouTube-API%20v3-red.svg)](https://developers.google.com/youtube/v3)
+[![CI](https://github.com/nuzael/ytminer/actions/workflows/ci.yml/badge.svg)](https://github.com/nuzael/ytminer/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-80%25+-brightgreen.svg)](#continuous-integration-ci)
 
 ## Quick Reference
 
