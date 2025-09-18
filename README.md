@@ -8,13 +8,51 @@ A command-line tool for YouTube content creators, marketers, and researchers to 
 
 ## Quick Start
 
+### Option 1: Download Pre-built Binary (Recommended)
+
+#### Automatic Installation
+
+**Linux/macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/nuzael/ytminer/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/nuzael/ytminer/main/install.ps1" -OutFile "install.ps1"
+.\install.ps1
+```
+
+#### Manual Installation
+1. Go to [Releases](https://github.com/nuzael/ytminer/releases)
+2. Download the binary for your platform
+3. Make it executable and run:
+
+```bash
+# Windows
+ytminer.exe
+
+# Linux/Mac
+chmod +x ytminer
+./ytminer
+```
+
+### Option 2: Build from Source
+```bash
+git clone https://github.com/nuzael/ytminer.git
+cd ytminer
+go build -o ytminer.exe
+```
+
+## Usage
+
 ### Interactive Mode (Recommended)
 ```bash
 # Windows
 .\ytminer.exe
 
 # Linux/Mac
-./ytminer.exe
+./ytminer
 ```
 
 ### CLI Mode
@@ -29,20 +67,13 @@ ytminer -k "meditation" -r BR -t 30d -l balanced
 ytminer -k "content marketing" -l deep -a opportunity --profile trending
 ```
 
-## Installation
+## Prerequisites
 
-### Prerequisites
-- Go 1.24+ installed
 - YouTube Data API v3 key
+- Go 1.24+ (only if building from source)
 
-### Build from Source
-```bash
-git clone https://github.com/nuzael/ytminer.git
-cd ytminer
-go build -o ytminer.exe
-```
+## Configuration
 
-### Configuration
 1. Copy `env.example` to `.env`
 2. Add your YouTube API key:
 ```bash

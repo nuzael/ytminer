@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Build for Windows
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o ytminer-windows-amd64.exe .
+          GOOS=windows GOARCH=arm64 go build -o ytminer-windows-arm64.exe .
+
+      - name: Build for Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o ytminer-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o ytminer-linux-arm64 .
+
+      - name: Build for macOS
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o ytminer-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o ytminer-darwin-arm64 .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ytminer-windows-amd64.exe
+            ytminer-windows-arm64.exe
+            ytminer-linux-amd64
+            ytminer-linux-arm64
+            ytminer-darwin-amd64
+            ytminer-darwin-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

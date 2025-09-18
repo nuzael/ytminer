@@ -5,6 +5,8 @@ Complete reference for using YTMiner CLI and interactive modes.
 ## Command Line Interface
 
 ### Basic Syntax
+
+**Note**: If you downloaded a pre-built binary, use the full path or add it to your PATH. If you built from source, the binary will be in the project directory.
 ```bash
 ytminer [OPTIONS]
 ```
