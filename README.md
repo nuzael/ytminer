@@ -49,6 +49,15 @@ ytminer -k "content marketing" -o date -l deep -a executive
 - Breakout keywords by Avg. VPD
 - Core keywords by frequency
 
+### Transcript-Aware Topic Insights (new)
+- Optional transcript fetching for public videos (timedtext); language preference via `YTMINER_TRANSCRIPT_LANGS`
+- Enriches keyword/topic analysis and future clustering (title + description + transcript)
+- Auto-generated captions may be used when manual captions are not available
+
+### Opportunity Score (`-a opportunity`)
+- Ranks videos/themes by a combined signal: velocity (VPD), engagement (likes per 1k views), freshness (younger is better), minus saturation penalty
+- Runs entirely in-memory; configurable weights via env (`YTMINER_OPP_W_VPD`, `YTMINER_OPP_W_LIKE`, `YTMINER_OPP_W_FRESH`, `YTMINER_OPP_W_SAT`); transcripts (if enabled) enrich future topic grouping, not this score
+
 ### Executive Reports (`-a executive`)
 - Summary of niche momentum and leaders
 - Strategic recommendations
@@ -150,13 +159,14 @@ chmod +x ytminer.exe
 ./ytminer.exe --help
 ```
 
-### 3. Configure API Key
+### 3. Configure API Key and Transcripts
 ```bash
 # Create .env file from template
 cp env.example .env
 
-# Edit .env file and add your API key:
+# Edit .env file and add your API key and optional transcript languages
 YOUTUBE_API_KEY=your_youtube_api_key_here
+YTMINER_TRANSCRIPT_LANGS=en,pt
 ```
 
 ### 4. Test the Tool
@@ -226,7 +236,7 @@ YOUTUBE_API_KEY=your_youtube_api_key_here
 | `-k, --keyword` | Search keyword | `-k "Python tutorial"` |
 | `-r, --region` | Country code (BR, US, GB, any) | `-r BR` |
 | `-d, --duration` | Video length (short, medium, long, any) | `-d short` |
-| `-a, --analysis` | Analysis type | `-a growth` |
+| `-a, --analysis` | Analysis type | `-a opportunity` |
 | `-l, --level` | Analysis level (quick, balanced, deep) | `-l balanced` |
 | `-t, --time` | Time range (any, 1h, 24h, 7d, 30d, 90d, 180d, 1y) | `-t 30d` |
 | `-o, --order` | Search order (`relevance`, `date`, `viewCount`, `rating`, `title`) | `-o viewCount` |

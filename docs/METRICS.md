@@ -10,6 +10,12 @@ This document explains how YTMiner computes each analysis. Our methodology is ce
 
 ## Data Cleaning and Normalization
 - Unicode normalization, tokenization, stopword removal, and emoji extraction are performed on titles.
+- When transcripts are available, the same cleaning steps are applied to transcript text (title + description + transcript).
+
+## Transcript Usage
+- Transcripts are used to better understand topical context and improve keyword/topic analyses.
+- They do not change the core velocity metric (VPD), but enable richer cluster/topic grouping and keyword ranking.
+- Transcript availability varies by video and language; auto-generated captions may be used with lower reliability.
 
 ## Core Analytical Metric: View Velocity (VPD)
 The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total views by the video's age, allowing us to compare the momentum of new and older videos on a level playing field.
@@ -48,6 +54,20 @@ The cornerstone of our analysis is **Views Per Day (VPD)**. It normalizes total 
 - **Long-tail Candidates**: Low frequency but high `Engagement%`.
   - Default: `Frequency <= YTMINER_LONG_TAIL_MAX_FREQ` (default 2) AND `Avg Engagement > YTMINER_LONG_TAIL_MIN_ENGAGEMENT` (default 5%).
   - Both are configurable via env.
+
+## Opportunity Score (Lightweight)
+The Opportunity Score is a simple, quota-friendly ranking computed in-memory over the current result set. It combines:
+- z(VPD)
+- z(Like rate per 1k views)
+- Freshness (min–max of age, inverted so newer videos score higher)
+- Saturation penalty (normalized frequency of the primary title token within the sample)
+
+Formula (weights subject to change):
+- `score = 0.45*z(VPD) + 0.25*z(like_rate) + 0.20*freshness - 0.30*saturation`
+
+Notes:
+- No persistence required; operates on the sample collected for the current search.
+- Transcripts are not required; future versions may incorporate topic clustering.
 
 ## Engagement Analysis
 - **Engagement Rate**: `(Likes + Comments) / max(1, Views) * 100`

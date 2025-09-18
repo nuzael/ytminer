@@ -16,18 +16,20 @@ type Client struct {
 }
 
 type Video struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Channel     string    `json:"channel"`
-	ChannelID   string    `json:"channel_id"`
-	PublishedAt time.Time `json:"published_at"`
-	Views       int64     `json:"views"`
-	Likes       int64     `json:"likes"`
-	Comments    int64     `json:"comments"`
-	Duration    string    `json:"duration"`
-	URL         string    `json:"url"`
-	Description string    `json:"description"`
-	VPD         float64   `json:"vpd"`
+	ID             string    `json:"id"`
+	Title          string    `json:"title"`
+	Channel        string    `json:"channel"`
+	ChannelID      string    `json:"channel_id"`
+	PublishedAt    time.Time `json:"published_at"`
+	Views          int64     `json:"views"`
+	Likes          int64     `json:"likes"`
+	Comments       int64     `json:"comments"`
+	Duration       string    `json:"duration"`
+	URL            string    `json:"url"`
+	Description    string    `json:"description"`
+	VPD            float64   `json:"vpd"`
+	Transcript     string    `json:"transcript,omitempty"`
+	TranscriptLang string    `json:"transcript_lang,omitempty"`
 }
 
 type AnalysisLevel int

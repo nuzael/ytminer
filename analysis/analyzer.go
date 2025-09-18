@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
+	"math"
 	"ytminer/config"
 	"ytminer/utils"
 	"ytminer/youtube"
@@ -16,13 +18,13 @@ type Analyzer struct {
 }
 
 type GrowthPattern struct {
-	TotalVideos         int     `json:"total_videos"`
-	AvgViews            float64 `json:"avg_views"`
-	AvgLikes            float64 `json:"avg_likes"`
-	AvgComments         float64 `json:"avg_comments"`
-	NicheVelocityScore  float64 `json:"niche_velocity_score"`
-	TopPerformers       []VideoPerformance `json:"top_performers"`
-	Insights            []string `json:"insights"`
+	TotalVideos        int                `json:"total_videos"`
+	AvgViews           float64            `json:"avg_views"`
+	AvgLikes           float64            `json:"avg_likes"`
+	AvgComments        float64            `json:"avg_comments"`
+	NicheVelocityScore float64            `json:"niche_velocity_score"`
+	TopPerformers      []VideoPerformance `json:"top_performers"`
+	Insights           []string           `json:"insights"`
 }
 
 type VideoPerformance struct {
@@ -36,11 +38,11 @@ type VideoPerformance struct {
 }
 
 type TitleAnalysis struct {
-	CommonWords    []WordCount `json:"common_words"`
-	CommonPhrases  []PhraseCount `json:"common_phrases"`
-	Emojis         []EmojiCount `json:"emojis"`
-	Patterns       []string `json:"patterns"`
-	Insights       []string `json:"insights"`
+	CommonWords   []WordCount   `json:"common_words"`
+	CommonPhrases []PhraseCount `json:"common_phrases"`
+	Emojis        []EmojiCount  `json:"emojis"`
+	Patterns      []string      `json:"patterns"`
+	Insights      []string      `json:"insights"`
 }
 
 type WordCount struct {
@@ -59,11 +61,11 @@ type EmojiCount struct {
 }
 
 type CompetitorAnalysis struct {
-	TopChannels    []ChannelStats `json:"top_channels"`
-	RisingStars    []ChannelStats `json:"rising_stars"`
-	MarketShare    map[string]float64 `json:"market_share"`
-	Opportunities  []string `json:"opportunities"`
-	Insights       []string `json:"insights"`
+	TopChannels   []ChannelStats     `json:"top_channels"`
+	RisingStars   []ChannelStats     `json:"rising_stars"`
+	MarketShare   map[string]float64 `json:"market_share"`
+	Opportunities []string           `json:"opportunities"`
+	Insights      []string           `json:"insights"`
 }
 
 type ChannelStats struct {
@@ -79,9 +81,9 @@ type ChannelStats struct {
 }
 
 type TemporalAnalysis struct {
-	BestHours     []HourStats `json:"best_hours"`
-	BestDays      []DayStats `json:"best_days"`
-	Insights      []string `json:"insights"`
+	BestHours []HourStats `json:"best_hours"`
+	BestDays  []DayStats  `json:"best_days"`
+	Insights  []string    `json:"insights"`
 }
 
 type HourStats struct {
@@ -98,32 +100,42 @@ type DayStats struct {
 	Engagement float64 `json:"engagement"`
 }
 
-
-
 type KeywordAnalysis struct {
 	TrendingKeywords []KeywordStats `json:"trending_keywords"`
 	CoreKeywords     []KeywordStats `json:"core_keywords"`
 	LongTailKeywords []KeywordStats `json:"long_tail_keywords"`
-	SEOOpportunities []string `json:"seo_opportunities"`
-	Insights         []string `json:"insights"`
+	SEOOpportunities []string       `json:"seo_opportunities"`
+	Insights         []string       `json:"insights"`
 }
 
 type KeywordStats struct {
-	Keyword     string  `json:"keyword"`
-	Frequency   int     `json:"frequency"`
-	AvgViews    float64 `json:"avg_views"`
-	AvgVPD      float64 `json:"avg_vpd"`
-	Engagement  float64 `json:"engagement"`
+	Keyword    string  `json:"keyword"`
+	Frequency  int     `json:"frequency"`
+	AvgViews   float64 `json:"avg_views"`
+	AvgVPD     float64 `json:"avg_vpd"`
+	Engagement float64 `json:"engagement"`
 }
 
 type ExecutiveReport struct {
-	Summary           string `json:"summary"`
-	KeyInsights       []string `json:"key_insights"`
-	Recommendations   []string `json:"recommendations"`
-	ContentStrategy   []string `json:"content_strategy"`
-	CompetitiveIntel  []string `json:"competitive_intel"`
-	PerformanceBench  []string `json:"performance_bench"`
-	NextSteps         []string `json:"next_steps"`
+	Summary          string   `json:"summary"`
+	KeyInsights      []string `json:"key_insights"`
+	Recommendations  []string `json:"recommendations"`
+	ContentStrategy  []string `json:"content_strategy"`
+	CompetitiveIntel []string `json:"competitive_intel"`
+	PerformanceBench []string `json:"performance_bench"`
+	NextSteps        []string `json:"next_steps"`
+}
+
+type OpportunityItem struct {
+	Title      string   `json:"title"`
+	Channel    string   `json:"channel"`
+	URL        string   `json:"url"`
+	Score      float64  `json:"score"`
+	VPD        float64  `json:"vpd"`
+	LikeRate   float64  `json:"like_rate"`
+	AgeDays    int      `json:"age_days"`
+	Saturation float64  `json:"saturation"`
+	Reasons    []string `json:"reasons"`
 }
 
 func NewAnalyzer(videos []youtube.Video, cfg *config.AppConfig) *Analyzer {
@@ -216,9 +228,15 @@ func (a *Analyzer) AnalyzeTitles() TitleAnalysis {
 		}
 
 		// Patterns
-		if strings.Contains(titleLower, "tutorial") { patterns = append(patterns, "Tutorial Pattern") }
-		if strings.Contains(titleLower, "how to") { patterns = append(patterns, "How-to Pattern") }
-		if strings.Contains(titleLower, "2024") || strings.Contains(titleLower, "2023") { patterns = append(patterns, "Year Pattern") }
+		if strings.Contains(titleLower, "tutorial") {
+			patterns = append(patterns, "Tutorial Pattern")
+		}
+		if strings.Contains(titleLower, "how to") {
+			patterns = append(patterns, "How-to Pattern")
+		}
+		if strings.Contains(titleLower, "2024") || strings.Contains(titleLower, "2023") {
+			patterns = append(patterns, "Year Pattern")
+		}
 	}
 
 	var commonWords []WordCount
@@ -226,14 +244,18 @@ func (a *Analyzer) AnalyzeTitles() TitleAnalysis {
 		commonWords = append(commonWords, WordCount{Word: word, Count: count})
 	}
 	sort.Slice(commonWords, func(i, j int) bool { return commonWords[i].Count > commonWords[j].Count })
-	if len(commonWords) > 10 { commonWords = commonWords[:10] }
+	if len(commonWords) > 10 {
+		commonWords = commonWords[:10]
+	}
 
 	var commonPhrases []PhraseCount
 	for phrase, count := range phraseCounts {
 		commonPhrases = append(commonPhrases, PhraseCount{Phrase: phrase, Count: count})
 	}
 	sort.Slice(commonPhrases, func(i, j int) bool { return commonPhrases[i].Count > commonPhrases[j].Count })
-	if len(commonPhrases) > 5 { commonPhrases = commonPhrases[:5] }
+	if len(commonPhrases) > 5 {
+		commonPhrases = commonPhrases[:5]
+	}
 
 	var emojis []EmojiCount
 	for emoji, count := range emojiCounts {
@@ -264,7 +286,7 @@ func (a *Analyzer) AnalyzeCompetitors() CompetitorAnalysis {
 
 	for _, video := range a.videos {
 		totalVPD += video.VPD
-		
+
 		if stats, exists := channelStats[video.Channel]; exists {
 			stats.VideoCount++
 			stats.TotalViews += video.Views
@@ -307,7 +329,9 @@ func (a *Analyzer) AnalyzeCompetitors() CompetitorAnalysis {
 
 		// Check if it's a Rising Star based on configurable multiplier
 		mult := a.cfg.RisingStarMultiplier
-		if mult <= 0 { mult = 1.5 }
+		if mult <= 0 {
+			mult = 1.5
+		}
 		stats.IsRisingStar = stats.AvgVPD > nicheAvgVPD*mult
 
 		allChannels = append(allChannels, *stats)
@@ -357,7 +381,9 @@ func (a *Analyzer) AnalyzeCompetitors() CompetitorAnalysis {
 }
 
 func (a *Analyzer) AnalyzeTemporal() TemporalAnalysis {
-	if len(a.videos) == 0 { return TemporalAnalysis{} }
+	if len(a.videos) == 0 {
+		return TemporalAnalysis{}
+	}
 
 	hourStats := make(map[int]*HourStats)
 	hourN := make(map[int]int)
@@ -396,7 +422,9 @@ func (a *Analyzer) AnalyzeTemporal() TemporalAnalysis {
 	var bestHours []HourStats
 	for h, s := range hourStats {
 		n := hourN[h]
-		if n < minN { continue }
+		if n < minN {
+			continue
+		}
 		s.AvgViews /= float64(n)
 		s.AvgLikes /= float64(n)
 		s.Engagement /= float64(n)
@@ -407,7 +435,9 @@ func (a *Analyzer) AnalyzeTemporal() TemporalAnalysis {
 	var bestDays []DayStats
 	for d, s := range dayStats {
 		n := dayN[d]
-		if n < minN { continue }
+		if n < minN {
+			continue
+		}
 		s.AvgViews /= float64(n)
 		s.AvgLikes /= float64(n)
 		s.Engagement /= float64(n)
@@ -416,11 +446,13 @@ func (a *Analyzer) AnalyzeTemporal() TemporalAnalysis {
 	sort.Slice(bestDays, func(i, j int) bool { return bestDays[i].Engagement > bestDays[j].Engagement })
 
 	insights := a.generateTemporalInsights(bestHours, bestDays)
-	return TemporalAnalysis{ BestHours: bestHours, BestDays: bestDays, Insights: insights }
+	return TemporalAnalysis{BestHours: bestHours, BestDays: bestDays, Insights: insights}
 }
 
 func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
-	if len(a.videos) == 0 { return KeywordAnalysis{} }
+	if len(a.videos) == 0 {
+		return KeywordAnalysis{}
+	}
 
 	keywordStats := make(map[string]*KeywordStats)
 
@@ -434,11 +466,11 @@ func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
 				stats.AvgVPD += video.VPD
 				stats.Engagement += engagement
 			} else {
-				keywordStats[w] = &KeywordStats{ 
-					Keyword: w, 
-					Frequency: 1, 
-					AvgViews: float64(video.Views), 
-					AvgVPD: video.VPD,
+				keywordStats[w] = &KeywordStats{
+					Keyword:    w,
+					Frequency:  1,
+					AvgViews:   float64(video.Views),
+					AvgVPD:     video.VPD,
 					Engagement: engagement,
 				}
 			}
@@ -447,20 +479,30 @@ func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
 
 	// Core Keywords: ranked by frequency (the old trending logic)
 	var coreKeywords []KeywordStats
-	for _, s := range keywordStats { coreKeywords = append(coreKeywords, *s) }
+	for _, s := range keywordStats {
+		coreKeywords = append(coreKeywords, *s)
+	}
 	sort.Slice(coreKeywords, func(i, j int) bool { return coreKeywords[i].Frequency > coreKeywords[j].Frequency })
-	if len(coreKeywords) > 10 { coreKeywords = coreKeywords[:10] }
+	if len(coreKeywords) > 10 {
+		coreKeywords = coreKeywords[:10]
+	}
 
 	// Trending Keywords: now ranked by Avg VPD (velocity-based)
 	var trendingKeywords []KeywordStats
-	for _, s := range keywordStats { trendingKeywords = append(trendingKeywords, *s) }
+	for _, s := range keywordStats {
+		trendingKeywords = append(trendingKeywords, *s)
+	}
 
 	var longTailKeywords []KeywordStats
 	for _, s := range keywordStats {
 		maxFreq := a.cfg.LongTailMaxFreq
-		if maxFreq < 1 { maxFreq = 2 }
+		if maxFreq < 1 {
+			maxFreq = 2
+		}
 		minEng := a.cfg.LongTailMinEngagement
-		if minEng < 0 { minEng = 5.0 }
+		if minEng < 0 {
+			minEng = 5.0
+		}
 		if s.Frequency <= maxFreq && (s.Engagement/float64(s.Frequency)) > minEng {
 			longTailKeywords = append(longTailKeywords, *s)
 		}
@@ -494,7 +536,9 @@ func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
 
 	// Sort trending keywords by Average VPD (velocity)
 	sort.Slice(trendingKeywords, func(i, j int) bool { return trendingKeywords[i].AvgVPD > trendingKeywords[j].AvgVPD })
-	if len(trendingKeywords) > 10 { trendingKeywords = trendingKeywords[:10] }
+	if len(trendingKeywords) > 10 {
+		trendingKeywords = trendingKeywords[:10]
+	}
 
 	// Sort long tail by engagement as before
 	sort.Slice(longTailKeywords, func(i, j int) bool { return longTailKeywords[i].Engagement > longTailKeywords[j].Engagement })
@@ -502,12 +546,12 @@ func (a *Analyzer) AnalyzeKeywords() KeywordAnalysis {
 	seoOpportunities := a.generateSEOOpportunities(trendingKeywords, longTailKeywords)
 	insights := a.generateKeywordInsights(trendingKeywords, longTailKeywords)
 
-	return KeywordAnalysis{ 
-		TrendingKeywords: trendingKeywords, 
-		CoreKeywords: coreKeywords,
-		LongTailKeywords: longTailKeywords, 
-		SEOOpportunities: seoOpportunities, 
-		Insights: insights,
+	return KeywordAnalysis{
+		TrendingKeywords: trendingKeywords,
+		CoreKeywords:     coreKeywords,
+		LongTailKeywords: longTailKeywords,
+		SEOOpportunities: seoOpportunities,
+		Insights:         insights,
 	}
 }
 
@@ -537,9 +581,172 @@ func (a *Analyzer) GenerateExecutiveReport() ExecutiveReport {
 	}
 }
 
+// AnalyzeOpportunityScore computes a lightweight in-memory ranking combining
+// velocity (VPD), engagement (like_rate), freshness, and a simple saturation penalty.
+func (a *Analyzer) AnalyzeOpportunityScore() []OpportunityItem {
+	if len(a.videos) == 0 {
+		return []OpportunityItem{}
+	}
+
+	// Precompute features
+	now := time.Now()
+	vpdVals := make([]float64, 0, len(a.videos))
+	likeRateVals := make([]float64, 0, len(a.videos))
+	ageVals := make([]float64, 0, len(a.videos))
+
+	// Simple saturation: frequency of primary tokens (from title)
+	tokenFreq := make(map[string]int)
+	videoPrimaryToken := make([]string, len(a.videos))
+	for i, v := range a.videos {
+		// VPD
+		vpdVals = append(vpdVals, v.VPD)
+		// Like rate (likes per 1k views)
+		likeRate := 0.0
+		if v.Views > 0 {
+			likeRate = (float64(v.Likes) / float64(v.Views)) * 1000.0
+		}
+		likeRateVals = append(likeRateVals, likeRate)
+		// Age in days
+		ageDays := int(now.Sub(v.PublishedAt).Hours() / 24)
+		if ageDays < 0 {
+			ageDays = 0
+		}
+		ageVals = append(ageVals, float64(ageDays))
+
+		// Primary token: first non-stopword token of title
+		toks := utils.Tokenize(v.Title)
+		primary := ""
+		for _, t := range toks {
+			if t == "" {
+				continue
+			}
+			primary = t
+			break
+		}
+		if primary == "" {
+			primary = "_na_"
+		}
+		videoPrimaryToken[i] = primary
+		tokenFreq[primary]++
+	}
+
+	// Helpers: z-score and min-max freshness
+	z := func(vals []float64, x float64) float64 {
+		if len(vals) == 0 {
+			return 0
+		}
+		m := mean(vals)
+		sd := stddev(vals, m)
+		if sd == 0 {
+			return 0
+		}
+		return (x - m) / sd
+	}
+	minMax := func(vals []float64, x float64, invert bool) float64 {
+		if len(vals) == 0 {
+			return 0
+		}
+		minV, maxV := vals[0], vals[0]
+		for _, v := range vals {
+			if v < minV {
+				minV = v
+			}
+			if v > maxV {
+				maxV = v
+			}
+		}
+		if maxV == minV {
+			return 0
+		}
+		norm := (x - minV) / (maxV - minV)
+		if invert {
+			return 1.0 - norm
+		}
+		return norm
+	}
+
+	items := make([]OpportunityItem, 0, len(a.videos))
+	for i, v := range a.videos {
+		likeRate := 0.0
+		if v.Views > 0 {
+			likeRate = (float64(v.Likes) / float64(v.Views)) * 1000.0
+		}
+		ageDays := int(now.Sub(v.PublishedAt).Hours() / 24)
+		if ageDays < 0 {
+			ageDays = 0
+		}
+		freshness := minMax(ageVals, float64(ageDays), true) // younger -> closer to 1
+		// Saturation: normalized frequency of primary token
+		freq := float64(tokenFreq[videoPrimaryToken[i]])
+		// normalize by sample size
+		saturation := freq / float64(len(a.videos))
+
+		// Weights (could become config)
+		wVPD := a.cfg.OppWeightVPD
+		wLike := a.cfg.OppWeightLike
+		wFresh := a.cfg.OppWeightFresh
+		wSat := a.cfg.OppWeightSatPen // penalty weight
+
+		score := wVPD*z(vpdVals, v.VPD) + wLike*z(likeRateVals, likeRate) + wFresh*freshness - wSat*saturation
+
+		reasons := []string{
+			fmt.Sprintf("VPD=%s", utils.FormatVPD(v.VPD)),
+			fmt.Sprintf("LikeRate=%.2f/1k", likeRate),
+			fmt.Sprintf("Age=%dd", ageDays),
+			fmt.Sprintf("Saturation=%.2f", saturation),
+		}
+
+		items = append(items, OpportunityItem{
+			Title:      v.Title,
+			Channel:    v.Channel,
+			URL:        v.URL,
+			Score:      score,
+			VPD:        v.VPD,
+			LikeRate:   likeRate,
+			AgeDays:    ageDays,
+			Saturation: saturation,
+			Reasons:    reasons,
+		})
+	}
+
+	sort.Slice(items, func(i, j int) bool { return items[i].Score > items[j].Score })
+	if len(items) > 20 {
+		items = items[:20]
+	}
+	return items
+}
+
+func mean(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range vals {
+		sum += v
+	}
+	return sum / float64(len(vals))
+}
+
+func stddev(vals []float64, m float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range vals {
+		dv := v - m
+		sum += dv * dv
+	}
+	return math.Sqrt(sum / float64(len(vals)))
+}
+
 // Helper methods
 
-func max1(v float64) float64 { if v <= 0 { return 1 } ; return v }
+func max1(v float64) float64 {
+	if v <= 0 {
+		return 1
+	}
+	return v
+}
 
 func (a *Analyzer) generateGrowthInsights(avgViews, avgLikes, nicheVelocityScore float64) []string {
 	var insights []string
@@ -675,7 +882,7 @@ func (a *Analyzer) generateExecutiveSummary(growth GrowthPattern, titles TitleAn
 	if len(competitors.RisingStars) > 0 {
 		risingStarsInfo = fmt.Sprintf(" %d rising star channel(s) detected with high velocity.", len(competitors.RisingStars))
 	}
-	
+
 	if len(competitors.TopChannels) == 0 {
 		return fmt.Sprintf("Analysis of %d videos shows Niche Velocity Score of %s VPD with %s average views.%s",
 			growth.TotalVideos,
@@ -683,10 +890,10 @@ func (a *Analyzer) generateExecutiveSummary(growth GrowthPattern, titles TitleAn
 			utils.FormatNumber(growth.AvgViews),
 			risingStarsInfo)
 	}
-	return fmt.Sprintf("Analysis of %d videos shows Niche Velocity Score of %s VPD with %s average views. Top channel '%s' leads with %.1f%% market share.%s", 
-		growth.TotalVideos, 
+	return fmt.Sprintf("Analysis of %d videos shows Niche Velocity Score of %s VPD with %s average views. Top channel '%s' leads with %.1f%% market share.%s",
+		growth.TotalVideos,
 		utils.FormatVPD(growth.NicheVelocityScore),
-		utils.FormatNumber(growth.AvgViews), 
+		utils.FormatNumber(growth.AvgViews),
 		competitors.TopChannels[0].Channel,
 		competitors.MarketShare[competitors.TopChannels[0].Channel],
 		risingStarsInfo)
@@ -697,15 +904,15 @@ func (a *Analyzer) generateKeyInsights(growth GrowthPattern, titles TitleAnalysi
 
 	insights = append(insights, fmt.Sprintf("Average views: %s", utils.FormatNumber(growth.AvgViews)))
 	insights = append(insights, fmt.Sprintf("Niche Velocity Score: %s VPD", utils.FormatVPD(growth.NicheVelocityScore)))
-	
+
 	if len(keywords.TrendingKeywords) > 0 {
 		insights = append(insights, fmt.Sprintf("Top trending keyword: '%s' (%s VPD)", keywords.TrendingKeywords[0].Keyword, utils.FormatVPD(keywords.TrendingKeywords[0].AvgVPD)))
 	}
-	
+
 	if len(competitors.RisingStars) > 0 {
 		insights = append(insights, fmt.Sprintf("Rising stars detected: %d channels", len(competitors.RisingStars)))
 	}
-	
+
 	if len(temporal.BestHours) > 0 {
 		insights = append(insights, fmt.Sprintf("Best posting time: %d:00", temporal.BestHours[0].Hour))
 	}
@@ -763,7 +970,7 @@ func (a *Analyzer) generateCompetitiveIntel(competitors CompetitorAnalysis) []st
 	if len(competitors.RisingStars) > 0 {
 		intel = append(intel, fmt.Sprintf("Rising stars detected: %d channels", len(competitors.RisingStars)))
 		for i, star := range competitors.RisingStars {
-			intel = append(intel, fmt.Sprintf("⭐ Rising Star #%d: %s (VPD: %s) - %s", 
+			intel = append(intel, fmt.Sprintf("⭐ Rising Star #%d: %s (VPD: %s) - %s",
 				i+1, star.Channel, utils.FormatVPD(star.AvgVPD), star.ChannelURL))
 		}
 	}
@@ -775,7 +982,7 @@ func (a *Analyzer) generatePerformanceBenchmarks(growth GrowthPattern, competito
 	var benchmarks []string
 
 	benchmarks = append(benchmarks, fmt.Sprintf("Your average: %s views", utils.FormatNumber(growth.AvgViews)))
-	
+
 	if len(competitors.TopChannels) > 0 {
 		benchmarks = append(benchmarks, fmt.Sprintf("Top competitor: %s views", utils.FormatNumber(competitors.TopChannels[0].AvgViews)))
 	}
@@ -793,4 +1000,3 @@ func (a *Analyzer) generateNextSteps(growth GrowthPattern, titles TitleAnalysis,
 
 	return steps
 }
-

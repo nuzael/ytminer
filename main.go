@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -223,7 +224,7 @@ func showSearchForm() {
 	var timeRange string = globalAppConfig.DefaultTimeRange
 	var order string = globalAppConfig.DefaultOrder
 	var previewBefore bool
-
+	var useTranscripts bool
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
@@ -298,6 +299,12 @@ func showSearchForm() {
 		),
 		huh.NewGroup(
 			huh.NewConfirm().
+				Title("📝 Fetch transcripts for topic insights?").
+				Description("No extra YouTube API quota; may increase runtime.").
+				Value(&useTranscripts),
+		),
+		huh.NewGroup(
+			huh.NewConfirm().
 				Title("👀 Preview results before analysis?").
 				Description("If No, we'll run the analysis directly after the search").
 				Value(&previewBefore),
@@ -346,6 +353,24 @@ func showSearchForm() {
 		utils.HandleError(err, "Failed to search videos")
 		showMainMenu()
 		return
+	}
+
+	// Optional transcript fetching (interactive choice overrides env)
+	if useTranscripts || os.Getenv("YTMINER_WITH_TRANSCRIPTS") == "true" {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		fetched := 0
+		for i := range videos {
+			tr, err := client.GetTranscript(ctx, videos[i].ID)
+			if err != nil {
+				log.Printf("transcript: %s: %v", videos[i].ID, err)
+				continue
+			}
+			videos[i].Transcript = tr.Text
+			videos[i].TranscriptLang = tr.Language
+			fetched++
+		}
+		log.Printf("transcripts fetched: %d/%d", fetched, len(videos))
 	}
 
 	// Sort videos by order
@@ -402,6 +427,7 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 						huh.NewOption("🏢 Competitor Analysis", "competitors"),
 						huh.NewOption("⏰ Temporal Analysis", "temporal"),
 						huh.NewOption("🔍 Keyword Analysis", "keywords"),
+						huh.NewOption("🎯 Opportunity Score", "opportunity"),
 						huh.NewOption("💼 Executive Report", "executive"),
 						huh.NewOption("📋 All Analyses", "all"),
 					).
@@ -442,6 +468,11 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 		keywords := analyzer.AnalyzeKeywords()
 		stopLoading()
 		ui.DisplayKeywordAnalysis(keywords)
+	case "opportunity":
+		stopLoading := utils.ShowLoading("🎯 Computing opportunity score...")
+		items := analyzer.AnalyzeOpportunityScore()
+		stopLoading()
+		ui.DisplayOpportunityScore(items)
 	case "executive":
 		stopLoading := utils.ShowLoading("💼 Generating executive report...")
 		report := analyzer.GenerateExecutiveReport()
@@ -475,6 +506,11 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 		keywords := analyzer.AnalyzeKeywords()
 		stopLoading()
 		ui.DisplayKeywordAnalysis(keywords)
+
+		stopLoading = utils.ShowLoading("🎯 Computing opportunity score...")
+		items := analyzer.AnalyzeOpportunityScore()
+		stopLoading()
+		ui.DisplayOpportunityScore(items)
 
 		stopLoading = utils.ShowLoading("💼 Generating executive report...")
 		report := analyzer.GenerateExecutiveReport()

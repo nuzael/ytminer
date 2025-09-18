@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"ytminer/analysis"
 	"ytminer/utils"
@@ -599,9 +600,38 @@ func DisplayMarkdown(content string) {
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(80),
 	)
-	
+
 	out, _ := r.Render(content)
 	fmt.Print(out)
 }
 
-
+func DisplayOpportunityScore(items []analysis.OpportunityItem) {
+	if len(items) == 0 {
+		DisplayWarning("No opportunity candidates found")
+		return
+	}
+	fmt.Printf("\n🚀 Opportunity Score (Top Candidates)\n\n")
+	// Header
+	fmt.Printf("%-6s  %-48s  %-8s  %-8s  %-6s  %-10s  %s\n", "Rank", "Title", "Score", "VPD", "Age", "Like/1k", "Why")
+	fmt.Println(strings.Repeat("-", 120))
+	for i, it := range items {
+		why := strings.Join(it.Reasons, ", ")
+		if len(why) > 60 {
+			why = why[:60] + "…"
+		}
+		title := it.Title
+		if len(title) > 48 {
+			title = title[:48] + "…"
+		}
+		fmt.Printf("#%-5d  %-48s  %8.2f  %8s  %4dd  %10.2f  %s\n",
+			i+1,
+			title,
+			it.Score,
+			utils.FormatVPD(it.VPD),
+			it.AgeDays,
+			it.LikeRate,
+			why,
+		)
+	}
+	fmt.Println()
+}
