@@ -13,7 +13,8 @@ import (
 	"ytminer/analysis"
 	"ytminer/config"
 	"ytminer/ui"
-	"ytminer/utils"
+"ytminer/ui"
+	uitui "ytminer/ui/tui"
 	"ytminer/youtube"
 
 	"github.com/charmbracelet/huh"
@@ -21,6 +22,7 @@ import (
 )
 
 var globalAppConfig *config.AppConfig
+var globalIsInteractive bool
 
 func main() {
 	// Load environment variables
@@ -80,13 +82,16 @@ func main() {
 	ui.DisplayWelcome()
 
 	// If keyword is provided, run in CLI mode
+	// If keyword is provided, run in CLI mode
 	if *keyword != "" {
+		globalIsInteractive = false
 		runCLIMode(*keyword, *region, *duration, *analysis, *level, *timeRange, *order, *noPreview)
 		return
 	}
 
 	// Otherwise, run in interactive mode
-	showMainMenu()
+	globalIsInteractive = true
+	if *keyword != "" {
 }
 
 func showHelp() {
@@ -438,6 +443,41 @@ func runAnalysis(videos []youtube.Video, analysisType string) {
 	// Create analyzer
 	analyzer := analysis.NewAnalyzer(videos, globalAppConfig)
 
+
+	// If interactive mode, open TUI viewer by default
+	if globalIsInteractive {
+		stopLoading := utils.ShowLoading("í³Š Preparing TUI viewer...")
+		growth := analyzer.AnalyzeGrowthPatterns()
+		titles := analyzer.AnalyzeTitles()
+		competitors := analyzer.AnalyzeCompetitors()
+		temporal := analyzer.AnalyzeTemporal()
+		keywords := analyzer.AnalyzeKeywords()
+		opportunity := analyzer.AnalyzeOpportunityScore()
+		executive := analyzer.GenerateExecutiveReport()
+		stopLoading()
+		if err := uitui.ShowViewer(growth, titles, competitors, temporal, keywords, opportunity, executive); err != nil {
+			ui.DisplayError("TUI viewer error: " + err.Error())
+		}
+		// After closing viewer, ask to run another analysis
+		var another bool
+		anotherForm := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("í´„ Run Another Analysis?").
+					Description("Would you like to run another analysis?").
+					Value(&another),
+			),
+		)
+		if err := anotherForm.Run(); err != nil {
+			log.Fatal(err)
+		}
+		if another {
+			runAnalysis(videos, "")
+		} else {
+			showMainMenu()
+		}
+		return
+	}
 	// If no analysis type specified, ask user
 	if analysisType == "" {
 		var selectedType string
